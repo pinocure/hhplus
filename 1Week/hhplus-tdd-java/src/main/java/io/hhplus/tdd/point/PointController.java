@@ -62,7 +62,7 @@ public class PointController {
 
         // [기능 추가 구현] 충전 금액 유효성 검사
         if (amount < MIN_AMOUNT) {
-            throw new IllegalArgumentException("충전 금액은: " + MIN_AMOUNT + "원 이상이어야 합니다.");
+            throw new IllegalArgumentException("충전 금액은 " + MIN_AMOUNT + "원 이상이어야 합니다.");
         }
 
         if (amount > MAX_CHARGE_AMOUNT) {

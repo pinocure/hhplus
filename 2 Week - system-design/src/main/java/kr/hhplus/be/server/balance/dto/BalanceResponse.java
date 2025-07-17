@@ -1,7 +1,8 @@
 package kr.hhplus.be.server.balance.dto;
 
-public record BalanceResponse() {
+import java.math.BigDecimal;
 
-
-
-}
+public record BalanceResponse(
+        Long userId,
+        BigDecimal balance
+) {}

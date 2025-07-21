@@ -3,6 +3,7 @@ package com.hhplus.ecommerce.product.application.service;
 import com.hhplus.ecommerce.product.application.port.in.ProductUseCase;
 import com.hhplus.ecommerce.product.application.port.out.ProductRepository;
 import com.hhplus.ecommerce.product.domain.Product;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -11,6 +12,7 @@ import java.util.List;
  * 책임: ProductUseCase를 구현하며, 유즈케이스 흐름을 조율하고 도메인 로직을 호출하며 포트들을 통해 외부와 상호작용
  */
 
+@Service
 public class ProductService implements ProductUseCase {
 
     private final ProductRepository productRepository;

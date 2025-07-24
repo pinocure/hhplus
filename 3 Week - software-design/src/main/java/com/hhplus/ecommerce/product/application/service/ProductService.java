@@ -53,6 +53,7 @@ public class ProductService implements ProductUseCase {
         productRepository.save(product);
     }
 
+    @Override
     public void deductStock(Long productId, int quantity) {
         Product product = getProduct(productId);
         product.deductStock(quantity);

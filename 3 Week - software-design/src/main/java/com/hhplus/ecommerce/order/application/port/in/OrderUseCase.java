@@ -13,4 +13,5 @@ public interface OrderUseCase {
 
     Order createOrder(Long userId, List<Long> productIds, List<Integer> quantities, List<String> couponCodes);
 
+    Order payOrder(Long orderId);
 }

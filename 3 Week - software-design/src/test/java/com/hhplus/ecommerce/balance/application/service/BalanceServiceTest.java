@@ -67,6 +67,24 @@ public class BalanceServiceTest {
         assertThrows(RuntimeException.class, () -> balanceService.getBalance(1L));
     }
 
+    @Test
+    void deductBalance_success() {
+        Balance balance = new Balance(1L, new BigDecimal("1000"));
+        when(balanceRepository.findByUserId(1L)).thenReturn(Optional.of(balance));
+        when(balanceRepository.save(any(Balance.class))).thenReturn(balance);
+
+        assertDoesNotThrow(() -> balanceService.deductBalance(1L, new BigDecimal("500")));
+        assertEquals(new BigDecimal("500"), balance.getAmount());
+    }
+
+    @Test
+    void deductBalance_insufficient() {
+        Balance balance = new Balance(1L, new BigDecimal("100"));
+        when(balanceRepository.findByUserId(1L)).thenReturn(Optional.of(balance));
+
+        assertThrows(IllegalArgumentException.class, () -> balanceService.deductBalance(1L, new BigDecimal("200")));
+    }
+
 }
 
 

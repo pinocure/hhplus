@@ -34,6 +34,7 @@ public class CouponServiceTest {
         CouponEvent event = new CouponEvent(1L, "Event1", new BigDecimal("500"), 10, LocalDateTime.now().plusDays(7));
         when(couponRepository.findEventById(1L)).thenReturn(Optional.of(event));
         when(couponRepository.findByUserIdAndEventId(1L, 1L)).thenReturn(Optional.empty());
+        when(couponRepository.checkEventVersion(1L, 0L)).thenReturn(true);
         when(couponRepository.save(any(Coupon.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(couponRepository.saveEvent(any(CouponEvent.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -42,6 +43,7 @@ public class CouponServiceTest {
         assertNotNull(result.getCode());
         assertEquals(1L, result.getUserId());
         assertEquals(new BigDecimal("500"), result.getDiscountAmount());
+        assertEquals(1L, event.getVersion());
     }
 
     @Test
@@ -67,6 +69,16 @@ public class CouponServiceTest {
         when(couponRepository.findByCode("CODE1")).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> couponService.validateCoupon("CODE1"));
+    }
+
+    @Test
+    void issueCoupon_concurrencyConflict() {
+        CouponEvent event = new CouponEvent(1L, "Event1", new BigDecimal("500"), 10, LocalDateTime.now().plusDays(7));
+        when(couponRepository.findEventById(1L)).thenReturn(Optional.of(event));
+        when(couponRepository.findByUserIdAndEventId(1L, 1L)).thenReturn(Optional.empty());
+        when(couponRepository.checkEventVersion(1L, 0L)).thenReturn(false);
+
+        assertThrows(IllegalStateException.class, () -> couponService.issueCoupon(1L, 1L));
     }
 
 }

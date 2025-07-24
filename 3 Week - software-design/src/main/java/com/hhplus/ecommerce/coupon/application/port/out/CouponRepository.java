@@ -20,4 +20,6 @@ public interface CouponRepository {
 
     Optional<Coupon> findByUserIdAndEventId(Long userId, Long eventId);
 
+    boolean checkEventVersion(Long eventId, Long version);
+
 }

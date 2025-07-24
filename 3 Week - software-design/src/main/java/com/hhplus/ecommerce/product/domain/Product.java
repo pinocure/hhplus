@@ -41,6 +41,21 @@ public class Product {
             throw new IllegalArgumentException("재고가 부족합니다.");
         }
         this.reservedStock += quantity;
+        this.version++;
+    }
+
+    public void deductStock(int quantity) {
+        if (this.reservedStock < quantity) {
+            throw new IllegalArgumentException("예약 재고가 부족합니다.");
+        }
+        this.stock -= quantity;
+        this.reservedStock -= quantity;
+        this.version++;
+    }
+
+    public void rollbackReservedStock(int quantity) {
+        this.reservedStock -= quantity;
+        this.version++;
     }
 
 }

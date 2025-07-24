@@ -44,6 +44,23 @@ public class ProductRepositoryAdapterTest {
         assertEquals("New", saved.getName());
     }
 
+    @Test
+    void checkProductVersion_success() {
+        Product product = new Product(3L, "New", BigDecimal.valueOf(3000), 30, 0, 0L);
+        repository.save(product);
+        boolean result = repository.checkProductVersion(3L, 0L);
+        assertTrue(result);
+    }
+
+    @Test
+    void checkProductVersion_conflict() {
+        Product product = new Product(3L, "New", BigDecimal.valueOf(3000), 30, 0, 0L);
+        product.setVersion(1L);
+        repository.save(product);
+        boolean result = repository.checkProductVersion(3L, 0L);
+        assertFalse(result);
+    }
+
 }
 
 

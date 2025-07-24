@@ -17,4 +17,6 @@ public interface ProductRepository {
     List<Product> findPopular(int days, int limit);
     Product save(Product product);
 
+    boolean checkProductVersion(Long productId, Long version);
+
 }

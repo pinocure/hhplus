@@ -48,6 +48,16 @@ public class ProductRepositoryAdapter implements ProductRepository {
         store.put(product.getId(), product);
         return product;
     }
+
+    @Override
+    public boolean checkProductVersion(Long productId, Long version) {
+        Product product = store.get(productId);
+        if (product == null) {
+            return false;
+        }
+        return product.getVersion().equals(version);
+    }
+
 }
 
 

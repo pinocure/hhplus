@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 public class ProductServiceTest {
@@ -67,6 +68,50 @@ public class ProductServiceTest {
 
         List<Product> result = productService.getPopularProducts(3, 5);
         assertEquals(1, result.size());
+    }
+
+    @Test
+    void reserveStock_success() {
+        Product p1 = new Product(1L, "P1", BigDecimal.TEN, 10, 0, 0L);
+        when(productRepository.findById(1L)).thenReturn(Optional.of(p1));
+        when(productRepository.checkProductVersion(1L, 0L)).thenReturn(true);
+        when(productRepository.save(any(Product.class))).thenReturn(p1);
+
+        assertDoesNotThrow(() -> productService.reserveStock(1L, 5, 0L));
+        assertEquals(5, p1.getReservedStock());
+        assertEquals(1L, p1.getVersion());
+    }
+
+    @Test
+    void reserveStock_concurrencyConflict() {
+        Product p1 = new Product(1L, "P1", BigDecimal.TEN, 10, 0, 0L);
+        when(productRepository.findById(1L)).thenReturn(Optional.of(p1));
+        when(productRepository.checkProductVersion(1L, 0L)).thenReturn(false);
+
+        assertThrows(IllegalStateException.class, () -> productService.reserveStock(1L, 5, 0L));
+    }
+
+    @Test
+    void deductStock_success() {
+        Product p1 = new Product(1L, "P1", BigDecimal.TEN, 10, 0, 0L);
+        p1.setReservedStock(5);
+        when(productRepository.findById(1L)).thenReturn(Optional.of(p1));
+        when(productRepository.save(any(Product.class))).thenReturn(p1);
+
+        productService.deductStock(1L, 5);
+        assertEquals(5, p1.getStock());
+        assertEquals(0, p1.getReservedStock());
+    }
+
+    @Test
+    void rollbackReservedStock_success() {
+        Product p1 = new Product(1L, "P1", BigDecimal.TEN, 10, 0, 0L);
+        p1.setReservedStock(5);
+        when(productRepository.findById(1L)).thenReturn(Optional.of(p1));
+        when(productRepository.save(any(Product.class))).thenReturn(p1);
+
+        productService.rollBackStock(1L, 5);
+        assertEquals(0, p1.getReservedStock());
     }
 
 }

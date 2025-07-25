@@ -13,6 +13,7 @@ public class OrderCouponTest {
         OrderCoupon coupon = new OrderCoupon("CODE", BigDecimal.valueOf(500));
 
         assertEquals(BigDecimal.valueOf(500), coupon.getDiscountAmount());
+        assertFalse(coupon.isUsed());
     }
 
 }

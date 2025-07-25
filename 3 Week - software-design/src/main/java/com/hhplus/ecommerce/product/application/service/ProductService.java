@@ -44,6 +44,28 @@ public class ProductService implements ProductUseCase {
         return popular.isEmpty() ? List.of() : popular;
     }
 
+    public void reserveStock(Long productId, int quantity, Long version) {
+        Product product = getProduct(productId);
+        if (!productRepository.checkProductVersion(productId, version)) {
+            throw new IllegalStateException("재고 업데이트 중 충돌이 발생했습니다. 관리자에게 문의해주세요.");
+        }
+        product.reserveStock(quantity);
+        productRepository.save(product);
+    }
+
+    @Override
+    public void deductStock(Long productId, int quantity) {
+        Product product = getProduct(productId);
+        product.deductStock(quantity);
+        productRepository.save(product);
+    }
+
+    public void rollBackStock(Long productId, int quantity) {
+        Product product = getProduct(productId);
+        product.rollbackReservedStock(quantity);
+        productRepository.save(product);
+    }
+
 }
 
 

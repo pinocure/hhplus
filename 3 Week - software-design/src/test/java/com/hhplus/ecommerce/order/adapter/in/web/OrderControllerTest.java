@@ -50,6 +50,18 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.totalPrice").value(2000));
     }
 
+    @Test
+    void payOrder_success() throws Exception {
+        Order order = new Order(1L, List.of(), List.of());
+        order.setId(1L);
+        order.setStatus("PAID");
+        when(orderUseCase.payOrder(1L)).thenReturn(order);
+
+        mockMvc.perform(post("/orders/1/pay"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PAID"));
+    }
+
 }
 
 

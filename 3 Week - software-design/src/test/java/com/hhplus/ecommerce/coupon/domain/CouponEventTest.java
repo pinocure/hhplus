@@ -22,6 +22,12 @@ public class CouponEventTest {
         assertThrows(IllegalStateException.class, event::issueCoupon);
     }
 
+    @Test
+    void issueCoupon_expired() {
+        CouponEvent event = new CouponEvent(1L, "Event1", new BigDecimal("500"), 10, LocalDateTime.now().minusDays(1));
+        assertThrows(IllegalStateException.class, event::issueCoupon);
+    }
+
 }
 
 

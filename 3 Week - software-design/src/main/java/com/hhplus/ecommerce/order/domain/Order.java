@@ -51,6 +51,21 @@ public class Order {
         items.forEach(item -> item.getProduct().reserveStock(item.getQuantity()));
         this.status = "CONFIRMED";
     }
+
+    public void pay() {
+        this.status = "PAID";
+    }
+
+    public void fail() {
+        this.status = "FAILED";
+        rollback();
+    }
+
+    private void rollback() {
+        items.forEach(item -> item.getProduct().rollbackReservedStock(item.getQuantity()));
+        coupons.forEach(coupon -> coupon.setUsed(false));       // 쿠폰 사용 취소
+    }
+
 }
 
 

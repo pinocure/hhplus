@@ -35,6 +35,11 @@ public class CouponService implements CouponUseCase {
             throw new IllegalStateException("이미 발급받은 쿠폰입니다.");
         }
 
+        // optimistic lock - In Memory
+        if (!couponRepository.checkEventVersion(event.getId(), event.getVersion())) {
+            throw new IllegalStateException("쿠폰 발급 중 충돌이 발생하였습니다. 관리자에게 문의해주세요.");
+        }
+
         event.issueCoupon();
         Coupon coupon = new Coupon(
                 UUID.randomUUID().toString(),

@@ -37,7 +37,11 @@ public class CouponEvent {
         if (remainingQuantity <= 0) {
             throw new IllegalStateException("쿠폰이 모두 발급되었습니다.");
         }
+        if (LocalDateTime.now().isAfter(expiresAt)) {
+            throw new IllegalStateException("쿠폰 이벤트가 만료되었습니다.");
+        }
         this.remainingQuantity--;
+        this.version++;             // optimistic locking
     }
 
 }

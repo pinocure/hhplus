@@ -43,6 +43,15 @@ public class BalanceService implements BalanceUseCase {
                 .orElseThrow(() -> new RuntimeException("사용자 잔액이 없습니다."));
     }
 
+    @Override
+    @Transactional
+    public void deductBalance(Long userId, BigDecimal amount) {
+        Optional<Balance> optionalBalance = balanceRepository.findByUserId(userId);
+        Balance balance = optionalBalance.orElseThrow(() -> new IllegalArgumentException("사용자의 잔액 정보가 없습니다."));
+        balance.deduct(amount);
+        balanceRepository.save(balance);
+    }
+
 }
 
 

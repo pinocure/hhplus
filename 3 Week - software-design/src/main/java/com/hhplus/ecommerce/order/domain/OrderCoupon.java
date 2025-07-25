@@ -19,10 +19,12 @@ public class OrderCoupon {
     private Long orderId;
     private String couponCode;
     private BigDecimal discountAmount;
+    private boolean used;
 
     public OrderCoupon(String couponCode, BigDecimal discountAmount) {
         this.couponCode = couponCode;
         this.discountAmount = discountAmount;
+        this.used = false;
     }
 
 }

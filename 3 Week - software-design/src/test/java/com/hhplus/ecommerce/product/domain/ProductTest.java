@@ -33,6 +33,32 @@ public class ProductTest {
         assertThrows(IllegalArgumentException.class, () -> product.reserveStock(15));
     }
 
+    @Test
+    void deductStock_success() {
+        Product product = new Product(1L, "Test", BigDecimal.TEN, 10, 0, 0L);
+        product.setReservedStock(5);
+        product.deductStock(5);
+        assertEquals(5, product.getStock());
+        assertEquals(0, product.getReservedStock());
+        assertEquals(1L, product.getVersion());
+    }
+
+    @Test
+    void deductStock_fail() {
+        Product product = new Product(1L, "Test", BigDecimal.TEN, 10, 0, 0L);
+        product.setReservedStock(3);
+        assertThrows(IllegalArgumentException.class, () -> product.deductStock(5));
+    }
+
+    @Test
+    void rollbackReservedStock_success() {
+        Product product = new Product(1L, "Test", BigDecimal.TEN, 10, 0, 0L);
+        product.setReservedStock(5);
+        product.rollbackReservedStock(5);
+        assertEquals(0, product.getReservedStock());
+        assertEquals(1L, product.getVersion());
+    }
+
 }
 
 

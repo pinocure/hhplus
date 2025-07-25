@@ -57,6 +57,16 @@ public class CouponRepositoryAdapter implements CouponRepository {
                 .findFirst();
     }
 
+    @Override
+    public boolean checkEventVersion(Long eventId, Long version) {
+        CouponEvent event = eventStore.get(eventId);
+        if (event == null) {
+            return false;
+        }
+
+        return event.getVersion().equals(version);
+    }
+
 }
 
 

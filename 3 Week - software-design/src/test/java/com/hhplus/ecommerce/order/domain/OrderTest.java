@@ -1,0 +1,44 @@
+package com.hhplus.ecommerce.order.domain;
+
+import com.hhplus.ecommerce.product.domain.Product;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class OrderTest {
+
+    @Test
+    void createOrder_success() {
+        Product p1 = new Product(1L, "P1", BigDecimal.valueOf(1000), 10, 0, 0L);
+        OrderItem item = new OrderItem(p1, 2);
+        Order order = new Order(1L, List.of(item), List.of());
+
+        assertEquals(BigDecimal.valueOf(2000), order.getTotalPrice());
+        assertEquals("PENDING", order.getStatus());
+    }
+
+    @Test
+    void confirm_success() {
+        Product p1 = new Product(1L, "P1", BigDecimal.valueOf(1000), 10, 0, 0L);
+        OrderItem item = new OrderItem(p1, 2);
+        Order order = new Order(1L, List.of(item), List.of());
+
+        order.confirm();
+        assertEquals("CONFIRMED", order.getStatus());
+        assertEquals(2, p1.getReservedStock());
+    }
+
+}
+
+
+
+
+
+
+
+
+
+

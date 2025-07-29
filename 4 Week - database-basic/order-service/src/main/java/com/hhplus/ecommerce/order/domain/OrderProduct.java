@@ -17,26 +17,16 @@ import java.math.BigDecimal;
 public class OrderProduct {
 
     private Long id;
+    private Long productId;
     private String name;
     private BigDecimal price;
 
-    public OrderProduct(Long id, String name, BigDecimal price) {
-        this.id = id;
+    public OrderProduct() {}
+
+    public OrderProduct(Long productId, String name, BigDecimal price) {
+        this.productId = productId;
         this.name = name;
         this.price = price;
-    }
-
-    public boolean hasEnoughStock(int quantity) {
-        // MSA 환경에서는 실제 재고 확인은 Product 서비스에서 처리
-        return true;
-    }
-
-    public void reserveStock(int quantity) {
-        // MSA 환경에서는 실제 재고 예약은 Product 서비스에서 처리
-    }
-
-    public void rollbackReservedStock(int quantity) {
-        // MSA 환경에서는 실제 재고 롤백은 Product 서비스에서 처리
     }
 
 }

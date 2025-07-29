@@ -2,6 +2,7 @@ package com.hhplus.ecommerce.order.adapter.out.persistence;
 
 import com.hhplus.ecommerce.order.application.port.out.OrderRepository;
 import com.hhplus.ecommerce.order.domain.Order;
+import com.hhplus.ecommerce.order.domain.OrderProduct;
 import org.springframework.stereotype.Repository;
 
 import java.util.HashMap;
@@ -18,13 +19,15 @@ import java.util.concurrent.atomic.AtomicLong;
 public class OrderRepositoryAdapter implements OrderRepository {
 
     // In-Memory 구현 -> JPA로 변경해야함
-    private final Map<Long, Order> store = new HashMap<>();
+    private final Map<Long, Order> orderStore  = new HashMap<>();
+    private final Map<Long, OrderProduct> orderProductStore  = new HashMap<>();
     private final AtomicLong idGenerator = new AtomicLong(1);
+    private final AtomicLong orderProductIdGenerator = new AtomicLong(1);
 
 
     @Override
     public Optional<Order> findById(long orderId) {
-        return Optional.ofNullable(store.get(orderId));
+        return Optional.ofNullable(orderStore.get(orderId));
     }
 
     @Override
@@ -32,10 +35,25 @@ public class OrderRepositoryAdapter implements OrderRepository {
         if (order.getId() == null) {
             order.setId(idGenerator.getAndIncrement());
         }
-        store.put(order.getId(), order);
+        orderStore.put(order.getId(), order);
 
         return order;
     }
+
+    @Override
+    public OrderProduct saveOrderProduct(OrderProduct orderProduct) {
+        if (orderProduct.getId() == null) {
+            orderProduct.setId(orderProductIdGenerator.getAndIncrement());
+        }
+        orderProductStore.put(orderProduct.getId(), orderProduct);
+        return orderProduct;
+    }
+
+    @Override
+    public Optional<OrderProduct> findOrderProductById(long orderProductId) {
+        return Optional.ofNullable(orderProductStore.get(orderProductId));
+    }
+
 }
 
 

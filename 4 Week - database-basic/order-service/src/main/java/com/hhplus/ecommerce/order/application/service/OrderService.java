@@ -56,7 +56,15 @@ public class OrderService implements OrderUseCase {
                     productDto.getPrice()
             );
 
-            items.add(new OrderItem(orderProduct, quantities.get(i)));
+            OrderProduct savedOrderProduct = orderRepository.saveOrderProduct(orderProduct);
+
+            OrderItem orderItem = new OrderItem(
+                    savedOrderProduct.getId(),
+                    quantities.get(i),
+                    productDto.getPrice()
+            );
+
+            items.add(orderItem);
         });
 
         // 실제 쿠폰 할인 처리
@@ -64,7 +72,7 @@ public class OrderService implements OrderUseCase {
         couponCodes.forEach(code -> {
             couponPort.validateCoupon(code);
             BigDecimal discountAmount = couponPort.getCouponDiscountAmount(code);
-            coupons.add(new OrderCoupon(code, discountAmount)); // MOCK 할인
+            coupons.add(new OrderCoupon(code, discountAmount));
         });
 
         Order order = new Order(userId, items, coupons);
@@ -88,7 +96,9 @@ public class OrderService implements OrderUseCase {
             balancePort.deductBalance(order.getUserId(), totalPrice);
 
             order.getItems().forEach(item -> {
-                productPort.deductStock(item.getProduct().getId(), item.getQuantity());
+                OrderProduct orderProduct = orderRepository.findOrderProductById(item.getOrderProductId())
+                                .orElseThrow(() -> new RuntimeException("주문 상품 정보를 찾을 수 없습니다."));
+                productPort.deductStock(orderProduct.getProductId(), item.getQuantity());
             });
 
             order.getCoupons().forEach(coupon -> coupon.setUsed(true));

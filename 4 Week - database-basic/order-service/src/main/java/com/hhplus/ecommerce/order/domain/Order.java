@@ -36,7 +36,7 @@ public class Order {
     // 총 가격 계산 (쿠폰 할인 적용)
     private BigDecimal calculateTotalPrice() {
         BigDecimal sum = items.stream()
-                .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .map(OrderItem::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal discount = coupons.stream()
@@ -48,7 +48,6 @@ public class Order {
 
     // 주문 확인 (MSA 환경에서는 외부 서비스 호출로 재고 예약)
     public void confirm() {
-        items.forEach(item -> item.getProduct().reserveStock(item.getQuantity()));
         this.status = "CONFIRMED";
     }
 
@@ -62,7 +61,6 @@ public class Order {
     }
 
     private void rollback() {
-        items.forEach(item -> item.getProduct().rollbackReservedStock(item.getQuantity()));
         coupons.forEach(coupon -> coupon.setUsed(false));       // 쿠폰 사용 취소
     }
 

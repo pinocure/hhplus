@@ -12,8 +12,7 @@ public class OrderTest {
 
     @Test
     void createOrder_success() {
-        OrderProduct orderProduct = new OrderProduct(1L, "P1", BigDecimal.valueOf(1000));
-        OrderItem item = new OrderItem(orderProduct, 2);
+        OrderItem item = new OrderItem(1L, 2, BigDecimal.valueOf(1000));
         Order order = new Order(1L, List.of(item), List.of());
 
         assertEquals(BigDecimal.valueOf(2000), order.getTotalPrice());
@@ -22,8 +21,7 @@ public class OrderTest {
 
     @Test
     void confirm_success() {
-        OrderProduct orderProduct = new OrderProduct(1L, "P1", BigDecimal.valueOf(1000));
-        OrderItem item = new OrderItem(orderProduct, 2);
+        OrderItem item = new OrderItem(1L, 2, BigDecimal.valueOf(1000));
         Order order = new Order(1L, List.of(item), List.of());
 
         order.confirm();
@@ -42,8 +40,7 @@ public class OrderTest {
 
     @Test
     void fail_and_rollback() {
-        OrderProduct orderProduct = new OrderProduct(1L, "P1", BigDecimal.valueOf(1000));
-        OrderItem item = new OrderItem(orderProduct, 2);
+        OrderItem item = new OrderItem(1L, 2, BigDecimal.valueOf(1000));
         OrderCoupon coupon = new OrderCoupon("CODE", BigDecimal.valueOf(500));
         coupon.setUsed(true);
         Order order = new Order(1L, List.of(item), List.of(coupon));

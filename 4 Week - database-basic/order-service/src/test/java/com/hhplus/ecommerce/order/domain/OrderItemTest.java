@@ -10,8 +10,7 @@ public class OrderItemTest {
 
     @Test
     void createOrderItem_success() {
-        OrderProduct orderProduct = new OrderProduct(1L, "P1", BigDecimal.valueOf(1000));
-        OrderItem item = new OrderItem(orderProduct, 2);
+        OrderItem item = new OrderItem(1L, 2, BigDecimal.valueOf(1000));
 
         assertEquals(BigDecimal.valueOf(1000), item.getUnitPrice());
         assertEquals(2, item.getQuantity());

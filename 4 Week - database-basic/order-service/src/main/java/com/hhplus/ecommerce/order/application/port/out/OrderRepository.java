@@ -1,6 +1,7 @@
 package com.hhplus.ecommerce.order.application.port.out;
 
 import com.hhplus.ecommerce.order.domain.Order;
+import com.hhplus.ecommerce.order.domain.OrderProduct;
 
 import java.util.Optional;
 
@@ -13,5 +14,8 @@ public interface OrderRepository {
 
     Optional<Order> findById(long orderId);
     Order save(Order order);
+
+    OrderProduct saveOrderProduct(OrderProduct orderProduct);
+    Optional<OrderProduct> findOrderProductById(long orderProductId);
 
 }

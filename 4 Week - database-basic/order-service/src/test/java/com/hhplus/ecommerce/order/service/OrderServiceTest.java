@@ -7,6 +7,7 @@ import com.hhplus.ecommerce.order.application.port.out.OrderRepository;
 import com.hhplus.ecommerce.order.application.port.out.ProductPort;
 import com.hhplus.ecommerce.order.application.service.OrderService;
 import com.hhplus.ecommerce.order.domain.Order;
+import com.hhplus.ecommerce.order.domain.OrderProduct;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -50,8 +51,12 @@ public class OrderServiceTest {
         productDto.setPrice(BigDecimal.valueOf(1000));
         productDto.setStock(10);
 
+        OrderProduct orderProduct = new OrderProduct(1L, "P1", BigDecimal.valueOf(1000));
+        orderProduct.setId(1L);
+
         // Port Mock 설정
         when(productPort.getProduct(1L)).thenReturn(productDto);
+        when(orderRepository.saveOrderProduct(any(OrderProduct.class))).thenReturn(orderProduct);
         doNothing().when(couponPort).validateCoupon("CODE");
         when(couponPort.getCouponDiscountAmount("CODE")).thenReturn(BigDecimal.valueOf(500)); // 쿠폰 할인 추가
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {

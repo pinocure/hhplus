@@ -98,7 +98,8 @@ public class CouponRepositoryAdapterTest {
 
     @Test
     void find_default_event() {
-        // 기본 이벤트 자동 생성
+        CouponEvent defaultEvent = new CouponEvent(1L, "Event1", new BigDecimal("500"), 10, LocalDateTime.now().plusDays(7));
+        repository.saveEvent(defaultEvent);
 
         Optional<CouponEvent> found = repository.findEventById(1L);
 

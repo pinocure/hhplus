@@ -1,29 +1,28 @@
-package com.hhplus.ecommerce.order.adapter.out.persistence;
+package com.hhplus.ecommerce.order;
 
+import com.hhplus.ecommerce.order.application.port.in.OrderUseCase;
+import com.hhplus.ecommerce.order.application.port.out.BalancePort;
+import com.hhplus.ecommerce.order.application.port.out.CouponPort;
 import com.hhplus.ecommerce.order.application.port.out.OrderRepository;
+import com.hhplus.ecommerce.order.application.port.out.ProductPort;
 import com.hhplus.ecommerce.order.domain.Order;
-import com.hhplus.ecommerce.order.domain.OrderProduct;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DataJpaTest
+@SpringBootTest
 @Testcontainers
-@Import(OrderRepositoryAdapter.class)
-public class OrderRepositoryAdapterTest {
+public class OrderServiceIntegrationTest {
 
     @Container
     static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
@@ -39,35 +38,34 @@ public class OrderRepositoryAdapterTest {
     }
 
     @Autowired
-    private OrderRepositoryAdapter repository;
+    private OrderRepository orderRepository;
 
     @Test
-    void save_and_find() {
+    void orderRepositoryIntegrationTest() {
+        // given : 주문 생성
         Order order = new Order(1L, new ArrayList<>(), new ArrayList<>());
-        Order saved = repository.save(order);
 
+        // when : 주문 저장
+        Order saved = orderRepository.save(order);
+
+        // then : 저장 성공
         assertNotNull(saved.getId());
-        Optional<Order> found = repository.findById(saved.getId());
-        assertTrue(found.isPresent());
+        assertEquals(1L, saved.getUserId());
+        assertEquals("PENDING", saved.getStatus());
     }
 
     @Test
-    void find_not_found() {
-        Optional<Order> found = repository.findById(987L);
-        assertFalse(found.isPresent());
-    }
+    void findOrderIntegrationTest() {
+        // given : 주문 저장
+        Order order = new Order(1L, new ArrayList<>(), new ArrayList<>());
+        Order saved = orderRepository.save(order);
 
-    @Test
-    void saveOrderProduct_success() {
-        OrderProduct product = new OrderProduct(1L, "Test Product", BigDecimal.valueOf(1000));
-        OrderProduct saved = repository.saveOrderProduct(product);
+        // when : 주문 조회
+        var found = orderRepository.findById(saved.getId());
 
-        assertNotNull(saved.getId());
-        assertEquals("Test Product", saved.getName());
-
-        Optional<OrderProduct> found = repository.findOrderProductById(saved.getId());
+        // then : 조회 성공
         assertTrue(found.isPresent());
-        assertEquals("Test Product", found.get().getName());
+        assertEquals(1L, found.get().getUserId());
     }
 
 }

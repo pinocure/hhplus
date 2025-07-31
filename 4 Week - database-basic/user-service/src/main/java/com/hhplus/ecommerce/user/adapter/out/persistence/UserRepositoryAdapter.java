@@ -1,12 +1,11 @@
 package com.hhplus.ecommerce.user.adapter.out.persistence;
 
+import com.hhplus.ecommerce.user.application.port.out.UserJpaRepository;
 import com.hhplus.ecommerce.user.application.port.out.UserRepository;
 import com.hhplus.ecommerce.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 /**

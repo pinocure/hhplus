@@ -1,5 +1,6 @@
-package com.hhplus.ecommerce.order.adapter.out.persistence;
+package com.hhplus.ecommerce.order.application.port.out;
 
+import com.hhplus.ecommerce.order.adapter.out.persistence.OrderJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**

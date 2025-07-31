@@ -1,16 +1,13 @@
 package com.hhplus.ecommerce.order.adapter.out.persistence;
 
-import com.hhplus.ecommerce.order.application.port.out.OrderRepository;
+import com.hhplus.ecommerce.order.application.port.out.*;
 import com.hhplus.ecommerce.order.domain.Order;
 import com.hhplus.ecommerce.order.domain.OrderProduct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 역할: order 리포지토리 어댑터 클래스 (Outbound Adapter)

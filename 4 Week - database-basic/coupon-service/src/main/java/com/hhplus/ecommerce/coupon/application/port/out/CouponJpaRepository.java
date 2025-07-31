@@ -1,5 +1,6 @@
-package com.hhplus.ecommerce.coupon.adapter.out.persistence;
+package com.hhplus.ecommerce.coupon.application.port.out;
 
+import com.hhplus.ecommerce.coupon.adapter.out.persistence.CouponJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

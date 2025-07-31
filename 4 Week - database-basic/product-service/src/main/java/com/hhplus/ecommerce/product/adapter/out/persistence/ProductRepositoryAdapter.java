@@ -1,12 +1,12 @@
 package com.hhplus.ecommerce.product.adapter.out.persistence;
 
+import com.hhplus.ecommerce.product.application.port.out.ProductJpaRepository;
 import com.hhplus.ecommerce.product.application.port.out.ProductRepository;
 import com.hhplus.ecommerce.product.domain.Product;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 

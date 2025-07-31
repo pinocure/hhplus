@@ -1,5 +1,6 @@
-package com.hhplus.ecommerce.product.adapter.out.persistence;
+package com.hhplus.ecommerce.product.application.port.out;
 
+import com.hhplus.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

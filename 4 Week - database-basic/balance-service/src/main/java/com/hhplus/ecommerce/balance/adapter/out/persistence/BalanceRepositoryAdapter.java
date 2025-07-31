@@ -5,8 +5,6 @@ import com.hhplus.ecommerce.balance.domain.Balance;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -18,7 +16,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class BalanceRepositoryAdapter implements BalanceRepository {
 
-    private final BalanceJpaRepository BalanceJpaRepository;
+    private final com.hhplus.ecommerce.balance.application.port.out.BalanceJpaRepository BalanceJpaRepository;
 
     @Override
     public Optional<Balance> findByUserId(long userId) {

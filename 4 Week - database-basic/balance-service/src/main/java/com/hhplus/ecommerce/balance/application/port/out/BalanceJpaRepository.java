@@ -1,5 +1,6 @@
-package com.hhplus.ecommerce.balance.adapter.out.persistence;
+package com.hhplus.ecommerce.balance.application.port.out;
 
+import com.hhplus.ecommerce.balance.adapter.out.persistence.BalanceJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**

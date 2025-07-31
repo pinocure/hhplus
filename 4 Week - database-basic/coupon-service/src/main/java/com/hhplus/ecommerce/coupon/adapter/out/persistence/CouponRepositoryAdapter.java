@@ -1,12 +1,12 @@
 package com.hhplus.ecommerce.coupon.adapter.out.persistence;
 
+import com.hhplus.ecommerce.coupon.application.port.out.CouponEventJpaRepository;
+import com.hhplus.ecommerce.coupon.application.port.out.CouponJpaRepository;
 import com.hhplus.ecommerce.coupon.application.port.out.CouponRepository;
 import com.hhplus.ecommerce.coupon.domain.Coupon;
 import com.hhplus.ecommerce.coupon.domain.CouponEvent;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**

@@ -1,10 +1,9 @@
-package com.hhplus.ecommerce.balance.adapter.out.persistence;
+package com.hhplus.ecommerce.balance;
 
-import com.hhplus.ecommerce.balance.domain.Balance;
+import com.hhplus.ecommerce.balance.application.port.in.BalanceUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.MySQLContainer;
@@ -12,14 +11,12 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DataJpaTest
+@SpringBootTest
 @Testcontainers
-@Import(BalanceRepositoryAdapter.class)
-public class BalanceRepositoryAdapterTest {
+public class BalanceServiceIntegrationTest {
 
     @Container
     static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
@@ -35,27 +32,31 @@ public class BalanceRepositoryAdapterTest {
     }
 
     @Autowired
-    private BalanceRepositoryAdapter repository;
+    private BalanceUseCase balanceUseCase;
 
     @Test
-    void save_and_find() {
-        Balance balance = new Balance(1L, new BigDecimal("1000"));
-        repository.save(balance);
+    void chargeBalanceIntegrationTest() {
+        Long userId = 1L;
+        BigDecimal chargeAmount = new BigDecimal("1000");
 
-        Optional<Balance> found = repository.findByUserId(1L);
-        assertTrue(found.isPresent());
-        assertEquals(new BigDecimal("1000"), found.get().getAmount());
+        BigDecimal result = balanceUseCase.chargeBalance(userId, chargeAmount);
+
+        assertEquals(0, chargeAmount.compareTo(result));
+        assertEquals(0, chargeAmount.compareTo(balanceUseCase.getBalance(userId)));
     }
 
     @Test
-    void find_not_found() {
-        Optional<Balance> found = repository.findByUserId(2L);
-        assertFalse(found.isPresent());
+    void deductBalanceIntegrationTest() {
+        Long userId = 2L;
+        balanceUseCase.chargeBalance(userId, new BigDecimal("1000"));
+
+        BigDecimal deductAmount = new BigDecimal("500");
+        balanceUseCase.deductBalance(userId, deductAmount);
+
+        assertEquals(0, new BigDecimal("500").compareTo(balanceUseCase.getBalance(userId)));
     }
 
 }
-
-
 
 
 

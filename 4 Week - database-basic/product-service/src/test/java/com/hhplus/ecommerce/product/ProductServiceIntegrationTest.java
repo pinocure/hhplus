@@ -1,29 +1,27 @@
-package com.hhplus.ecommerce.balance.adapter.out.persistence;
+package com.hhplus.ecommerce.product;
 
-import com.hhplus.ecommerce.balance.domain.Balance;
+import com.hhplus.ecommerce.product.application.port.in.ProductUseCase;
+import com.hhplus.ecommerce.product.domain.Product;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.math.BigDecimal;
-import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DataJpaTest
+@SpringBootTest
 @Testcontainers
-@Import(BalanceRepositoryAdapter.class)
-public class BalanceRepositoryAdapterTest {
+public class ProductServiceIntegrationTest {
 
     @Container
     static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("balance")
+            .withDatabaseName("product")
             .withUsername("ruang")
             .withPassword("ruang");
 
@@ -35,27 +33,26 @@ public class BalanceRepositoryAdapterTest {
     }
 
     @Autowired
-    private BalanceRepositoryAdapter repository;
+    private ProductUseCase productUseCase;
 
     @Test
-    void save_and_find() {
-        Balance balance = new Balance(1L, new BigDecimal("1000"));
-        repository.save(balance);
-
-        Optional<Balance> found = repository.findByUserId(1L);
-        assertTrue(found.isPresent());
-        assertEquals(new BigDecimal("1000"), found.get().getAmount());
+    void getAllProductsIntegrationTest() {
+        // 전체 상품 조회하고 상품 없으면 예외 발생
+        assertThrows(IllegalStateException.class, () -> {
+            productUseCase.getAllProducts();
+        });
     }
 
     @Test
-    void find_not_found() {
-        Optional<Balance> found = repository.findByUserId(2L);
-        assertFalse(found.isPresent());
+    void getPopularProductsIntegrationTest() {
+        // 인기상품 조회
+        List<Product> popular = productUseCase.getPopularProducts(3, 5);
+
+        // 빈 리스트 반환
+        assertTrue(popular.isEmpty());
     }
 
 }
-
-
 
 
 

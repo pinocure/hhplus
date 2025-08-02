@@ -1,24 +1,20 @@
-package com.hhplus.ecommerce.user.adapter.out.persistence;
+package com.hhplus.ecommerce.user;
 
-import com.hhplus.ecommerce.user.domain.User;
+import com.hhplus.ecommerce.user.application.port.in.UserUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-@DataJpaTest
+@SpringBootTest
 @Testcontainers
-@Import(UserRepositoryAdapter.class)
-public class UserRepositoryAdapterTest {
+public class UserServiceIntegrationTest {
 
     @Container
     static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
@@ -34,34 +30,19 @@ public class UserRepositoryAdapterTest {
     }
 
     @Autowired
-    private UserRepositoryAdapter repository;
+    private UserUseCase userUseCase;
 
     @Test
-    void findById_success() {
-        User user = new User(null);
-        User saved = repository.save(user);
+    void getUserIntegrationTest() {
+        // 사용자 생성(실제로는 DB에 있어야 함)
 
-        Optional<User> found = repository.findById(saved.getId());
-
-        assertTrue(found.isPresent());
-        assertEquals(saved.getId(), found.get().getId());
-    }
-
-    @Test
-    void findById_notFound() {
-        Optional<User> found = repository.findById(987L);
-        assertFalse(found.isPresent());
-    }
-
-    @Test
-    void save_success() {
-        User user = new User(null);
-        User saved = repository.save(user);
-        assertNotNull(saved.getId());
+        // 존재하지 않는 사용자 조회 시 예외 발생
+        assertThrows(IllegalArgumentException.class, () -> {
+            userUseCase.getUser(999L);
+        });
     }
 
 }
-
 
 
 

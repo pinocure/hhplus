@@ -17,6 +17,8 @@
 
 #### 3.1. 사용 명령어 - IntelliJ Terminal
 ```
+# 실행 위치 : 5 Week - database-advanced
+
 ./gradlew :balance-service:bootJar
 ./gradlew :coupon-service:bootJar
 ./gradlew :order-service:bootJar

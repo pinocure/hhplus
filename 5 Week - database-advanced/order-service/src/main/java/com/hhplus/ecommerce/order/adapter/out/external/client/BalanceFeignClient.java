@@ -1,0 +1,28 @@
+package com.hhplus.ecommerce.order.adapter.out.external.client;
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.math.BigDecimal;
+
+/**
+ * 역할: Balance 서비스의 REST API를 호출하기 위한 Feign Client 인터페이스
+ * 책임: HTTP 통신 세부사항을 선언적으로 정의하고 Balance 서비스의 엔드포인트와 매핑
+ */
+
+@FeignClient(name = "balance-service", url = "${services.balance.url}")
+public interface BalanceFeignClient {
+
+    @GetMapping("/balances/{userId}")
+    BigDecimal getBalance(@PathVariable("userId") Long userId);
+
+    @PostMapping("/balances/deduct")
+    void deductBalance(@RequestParam("userId") Long userId, @RequestParam("amount") BigDecimal amount);
+
+    @PostMapping("/balances/refund")
+    void refundBalance(@RequestParam("userId") Long userId, @RequestParam("amount") BigDecimal amount);
+
+}

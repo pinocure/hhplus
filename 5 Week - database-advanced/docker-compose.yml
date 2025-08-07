@@ -1,0 +1,271 @@
+version: '3.8'
+
+services:
+  # MySQL Databases
+  mysql-balance:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: pinocure
+      MYSQL_DATABASE: balance_db
+      MYSQL_USER: ruang
+      MYSQL_PASSWORD: ruang
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./init-scripts/balance-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppinocure"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ecommerce-network
+
+  mysql-coupon:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: pinocure
+      MYSQL_DATABASE: coupon_db
+      MYSQL_USER: ruang
+      MYSQL_PASSWORD: ruang
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./init-scripts/coupon-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppinocure"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ecommerce-network
+
+  mysql-order:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: pinocure
+      MYSQL_DATABASE: order_db
+      MYSQL_USER: ruang
+      MYSQL_PASSWORD: ruang
+    ports:
+      - "3309:3306"
+    volumes:
+      - ./init-scripts/order-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppinocure"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ecommerce-network
+
+  mysql-product:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: pinocure
+      MYSQL_DATABASE: product_db
+      MYSQL_USER: ruang
+      MYSQL_PASSWORD: ruang
+    ports:
+      - "3310:3306"
+    volumes:
+      - ./init-scripts/product-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppinocure"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ecommerce-network
+
+  mysql-user:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: pinocure
+      MYSQL_DATABASE: user_db
+      MYSQL_USER: ruang
+      MYSQL_PASSWORD: ruang
+    ports:
+      - "3311:3306"
+    volumes:
+      - ./init-scripts/user-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppinocure"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ecommerce-network
+
+  # Services
+  balance-service:
+    build: ./balance-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-balance:3306/balance_db?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ruang
+      SPRING_DATASOURCE_PASSWORD: ruang
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      mysql-balance:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ecommerce-network
+
+  coupon-service:
+    build: ./coupon-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-coupon:3306/coupon_db?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ruang
+      SPRING_DATASOURCE_PASSWORD: ruang
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      mysql-coupon:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ecommerce-network
+
+  product-service:
+    build: ./product-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-product:3306/product_db?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ruang
+      SPRING_DATASOURCE_PASSWORD: ruang
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      mysql-product:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ecommerce-network
+
+  user-service:
+    build: ./user-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-user:3306/user_db?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ruang
+      SPRING_DATASOURCE_PASSWORD: ruang
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      mysql-user:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ecommerce-network
+
+  order-service:
+    build: ./order-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-order:3306/order_db?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ruang
+      SPRING_DATASOURCE_PASSWORD: ruang
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SERVICES_BALANCE_URL: http://balance-service:8081
+      SERVICES_COUPON_URL: http://coupon-service:8082
+      SERVICES_PRODUCT_URL: http://product-service:8083
+      SERVICES_USER_URL: http://user-service:8084
+    depends_on:
+      mysql-order:
+        condition: service_healthy
+      balance-service:
+        condition: service_healthy
+      coupon-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ecommerce-network
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8090:8090"
+    environment:
+      SERVICES_ORDER_URL: http://order-service:8080
+      SERVICES_BALANCE_URL: http://balance-service:8081
+      SERVICES_COUPON_URL: http://coupon-service:8082
+      SERVICES_PRODUCT_URL: http://product-service:8083
+      SERVICES_USER_URL: http://user-service:8084
+    depends_on:
+      order-service:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ecommerce-network
+
+  # E2E Test Runner - 모든 서비스가 준비된 후 실행
+  e2e-test:
+    build: ./e2e-tests
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    environment:
+      API_GATEWAY_URL: http://api-gateway:8090
+    command: sh -c "sleep 30 && npm test"
+    volumes:
+      - ./e2e-tests/results:/app/results
+    networks:
+      - ecommerce-network
+
+networks:
+  ecommerce-network:
+    driver: bridge
+
+
+
+

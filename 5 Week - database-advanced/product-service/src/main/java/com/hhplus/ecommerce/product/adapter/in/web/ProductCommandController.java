@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
  */
 
 @RestController
-@RequestMapping("/products/command")
+@RequestMapping("/products")
 public class ProductCommandController {
 
     private final ProductCommandUseCase productCommandUseCase;
@@ -33,6 +33,18 @@ public class ProductCommandController {
 
     @PostMapping("/{productId}/cancel-reservation")
     public ResponseEntity<Void> cancelReservation(@PathVariable Long productId, @RequestParam int quantity) {
+        productCommandUseCase.cancelReservation(productId, quantity);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/stock/confirm")
+    public ResponseEntity<Void> confirmStock(@RequestParam Long productId, @RequestParam Integer quantity) {
+        productCommandUseCase.deductStock(productId, quantity);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/stock/restore")
+    public ResponseEntity<Void> restoreStock(@RequestParam Long productId, @RequestParam Integer quantity) {
         productCommandUseCase.cancelReservation(productId, quantity);
         return ResponseEntity.ok().build();
     }

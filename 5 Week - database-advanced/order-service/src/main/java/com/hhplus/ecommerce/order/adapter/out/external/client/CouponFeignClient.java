@@ -18,6 +18,9 @@ public interface CouponFeignClient {
     @PostMapping("/coupons/validate")
     void validateCoupon(@RequestParam("couponCode") String couponCode);
 
+    @PostMapping("/coupons/use")
+    void useCoupon(@RequestParam("couponCode") String couponCode);
+
     @GetMapping("/coupons/discount")
     BigDecimal getCouponDiscountAmount(@RequestParam("couponCode") String couponCode);
 

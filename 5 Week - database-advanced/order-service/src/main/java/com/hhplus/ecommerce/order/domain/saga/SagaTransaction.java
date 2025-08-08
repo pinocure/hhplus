@@ -1,6 +1,7 @@
 package com.hhplus.ecommerce.order.domain.saga;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
@@ -14,28 +15,34 @@ import java.util.List;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class SagaTransaction {
 
-    private String id;
+    private String sagaId;
     private Long orderId;
+    private String status; // STARTED, COMPLETED, FAILED
     private String currentStep;
-    private String status;          // STARTED, COMPENSATING, COMPLETED, FAILED
+    private String completedSteps;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private List<String> completedSteps;
 
-    public SagaTransaction(String id, Long orderId) {
-        this.id = id;
+    public SagaTransaction(String sagaId, Long orderId) {
+        this.sagaId = sagaId;
         this.orderId = orderId;
         this.status = "STARTED";
-        this.completedSteps = new ArrayList<>();
+        this.currentStep = "INIT";
+        this.completedSteps = "";
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
     public void addStep(String step) {
-        this.completedSteps.add(step);
         this.currentStep = step;
+        if (this.completedSteps == null || this.completedSteps.isEmpty()) {
+            this.completedSteps = step;
+        } else {
+            this.completedSteps = this.completedSteps + "," + step;
+        }
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -49,9 +56,8 @@ public class SagaTransaction {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void startCompensation() {
-        this.status = "COMPENSATING";
-        this.updatedAt = LocalDateTime.now();
+    public String getCurrentStep() {
+        return currentStep;
     }
 
 }

@@ -18,8 +18,10 @@ public interface SagaStateRepository extends JpaRepository<SagaStateJpaEntity, S
         return findById(sagaId).map(SagaStateJpaEntity::toDomain);
     }
 
-    default void save(SagaTransaction saga) {
-        save(SagaStateJpaEntity.from(saga));
+    default SagaTransaction saveSaga(SagaTransaction saga) {
+        SagaStateJpaEntity entity = SagaStateJpaEntity.from(saga);
+        SagaStateJpaEntity saved = save(entity);
+        return saved.toDomain();
     }
 
 }

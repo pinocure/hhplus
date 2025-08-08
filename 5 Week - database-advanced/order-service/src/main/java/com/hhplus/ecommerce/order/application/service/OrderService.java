@@ -6,6 +6,7 @@ import com.hhplus.ecommerce.order.application.port.out.feign.BalancePort;
 import com.hhplus.ecommerce.order.application.port.out.feign.CouponPort;
 import com.hhplus.ecommerce.order.application.port.out.OrderRepository;
 import com.hhplus.ecommerce.order.application.port.out.feign.ProductPort;
+import com.hhplus.ecommerce.order.application.saga.OrderSagaOrchestrator;
 import com.hhplus.ecommerce.order.domain.Order;
 import com.hhplus.ecommerce.order.domain.OrderCoupon;
 import com.hhplus.ecommerce.order.domain.OrderItem;
@@ -21,7 +22,7 @@ import java.util.stream.IntStream;
 /**
  * 역할: order 서비스 구현 클래스
  * 책임: OrderUseCase를 구현하며, 유즈케이스 흐름을 조율하고 도메인 로직을 호출하며 포트들을 통해 외부와 상호작용.
- *      외부 서비스와 HTTP 통신을 통해 비즈니스 로직 처리
+ *      Saga 패턴을 적용하여 분산 트랜잭션 처리
  */
 
 @Service
@@ -31,12 +32,18 @@ public class OrderService implements OrderUseCase {
     private final ProductPort productPort;
     private final CouponPort couponPort;
     private final BalancePort balancePort;
+    private final OrderSagaOrchestrator orderSagaOrchestrator;
 
-    public OrderService(OrderRepository orderRepository, ProductPort productPort, CouponPort couponPort, BalancePort balancePort) {
+    public OrderService(OrderRepository orderRepository,
+                        ProductPort productPort,
+                        CouponPort couponPort,
+                        BalancePort balancePort,
+                        OrderSagaOrchestrator orderSagaOrchestrator) {
         this.orderRepository = orderRepository;
         this.productPort = productPort;
         this.couponPort = couponPort;
         this.balancePort = balancePort;
+        this.orderSagaOrchestrator = orderSagaOrchestrator;
     }
 
     @Override
@@ -67,18 +74,26 @@ public class OrderService implements OrderUseCase {
             items.add(orderItem);
         });
 
-        // 실제 쿠폰 할인 처리
         List<OrderCoupon> coupons = new ArrayList<>();
-        couponCodes.forEach(code -> {
-            couponPort.validateCoupon(code);
-            BigDecimal discountAmount = couponPort.getCouponDiscountAmount(code);
-            coupons.add(new OrderCoupon(code, discountAmount));
+        couponCodes.forEach(couponCode -> {
+            couponPort.validateCoupon(couponCode);
+            BigDecimal discountAmount = couponPort.getCouponDiscountAmount(couponCode);
+            OrderCoupon orderCoupon = new OrderCoupon(couponCode, discountAmount);
+            coupons.add(orderCoupon);
         });
 
         Order order = new Order(userId, items, coupons);
-        order.confirm();
+        Order savedOrder = orderRepository.save(order);
 
-        return orderRepository.save(order);
+        try {
+            orderSagaOrchestrator.startOrderSaga(savedOrder);
+            savedOrder.setStatus("CONFIRMED");
+            return orderRepository.save(savedOrder);
+        } catch (Exception e) {
+            savedOrder.fail();
+            orderRepository.save(savedOrder);
+            throw e;
+        }
     }
 
     @Override
@@ -91,25 +106,16 @@ public class OrderService implements OrderUseCase {
             throw new IllegalStateException("결제 가능한 상태가 아닙니다.");
         }
 
+        // Saga 패턴으로 결제 처리
         try {
-            BigDecimal totalPrice = order.getTotalPrice();
-            balancePort.deductBalance(order.getUserId(), totalPrice);
-
-            order.getItems().forEach(item -> {
-                OrderProduct orderProduct = orderRepository.findOrderProductById(item.getOrderProductId())
-                                .orElseThrow(() -> new RuntimeException("주문 상품 정보를 찾을 수 없습니다."));
-                productPort.deductStock(orderProduct.getProductId(), item.getQuantity());
-            });
-
-            order.getCoupons().forEach(coupon -> coupon.setUsed(true));
-            order.pay();
-
+            orderSagaOrchestrator.startPaymentSaga(order);
+            return order;
         } catch (Exception e) {
+            // 결제 실패 시 주문 상태를 FAILED로 변경
             order.fail();
-            throw new RuntimeException("결제 실패: " + e.getMessage());
+            orderRepository.save(order);
+            throw e;
         }
-
-        return orderRepository.save(order);
     }
 
 }

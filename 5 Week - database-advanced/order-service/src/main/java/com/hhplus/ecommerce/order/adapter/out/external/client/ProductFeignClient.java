@@ -22,8 +22,14 @@ public interface ProductFeignClient {
     @PostMapping("/products/{productId}/reserve")
     void reserveStock(@PathVariable("productId") Long productId, @RequestParam("quantity") int quantity);
 
+    @PostMapping("/products/stock/confirm")
+    void confirmStock(@RequestParam("productId") Long productId, @RequestParam("quantity") Integer quantity);
+
     @PostMapping("/products/{productId}/cancel-reservation")
     void cancelReservation(@PathVariable("productId") Long productId, @RequestParam("quantity") int quantity);
+
+    @PostMapping("/products/stock/restore")
+    void restoreStock(@RequestParam("productId") Long productId, @RequestParam("quantity") Integer quantity);
 
 
     class ProductDto {

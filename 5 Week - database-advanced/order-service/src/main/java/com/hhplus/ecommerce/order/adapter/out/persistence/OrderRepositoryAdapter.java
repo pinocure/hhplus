@@ -19,8 +19,6 @@ import java.util.Optional;
 public class OrderRepositoryAdapter implements OrderRepository {
 
     private final OrderJpaRepository orderJpaRepository;
-    private final OrderItemJpaRepository orderItemJpaRepository;
-    private final OrderCouponJpaRepository orderCouponJpaRepository;
     private final OrderProductJpaRepository orderProductJpaRepository;
 
 

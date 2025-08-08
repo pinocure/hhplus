@@ -90,6 +90,15 @@ public class CouponService implements CouponUseCase {
         couponRepository.save(coupon);
     }
 
+    @Transactional
+    public void useCoupon(String couponCode) {
+        Coupon coupon = couponRepository.findByCode(couponCode)
+                .orElseThrow(() -> new IllegalArgumentException("쿠폰을 찾을 수 없습니다."));
+
+        coupon.use();
+        couponRepository.save(coupon);
+    }
+
 }
 
 

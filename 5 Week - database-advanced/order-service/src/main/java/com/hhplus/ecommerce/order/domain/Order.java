@@ -60,6 +60,10 @@ public class Order {
         rollback();
     }
 
+    public void complete() {
+        this.status = "COMPLETED";
+    }
+
     private void rollback() {
         coupons.forEach(coupon -> coupon.setUsed(false));       // 쿠폰 사용 취소
     }

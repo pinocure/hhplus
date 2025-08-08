@@ -43,6 +43,12 @@ public class CouponController {
         return ResponseEntity.ok(discountAmount);
     }
 
+    @PostMapping("/use")
+    public ResponseEntity<Void> useCoupon(@RequestParam String couponCode) {
+        couponService.useCoupon(couponCode);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/cancel")
     public ResponseEntity<Void> cancelCoupon(@RequestParam String couponCode) {
         couponService.cancelCoupon(couponCode);

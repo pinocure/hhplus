@@ -5,6 +5,7 @@ import com.hhplus.ecommerce.order.application.port.out.feign.BalancePort;
 import com.hhplus.ecommerce.order.application.port.out.feign.CouponPort;
 import com.hhplus.ecommerce.order.application.port.out.OrderRepository;
 import com.hhplus.ecommerce.order.application.port.out.feign.ProductPort;
+import com.hhplus.ecommerce.order.application.saga.OrderSagaOrchestrator;
 import com.hhplus.ecommerce.order.application.service.OrderService;
 import com.hhplus.ecommerce.order.domain.Order;
 import com.hhplus.ecommerce.order.domain.OrderProduct;
@@ -35,12 +36,15 @@ public class OrderServiceTest {
     @Mock
     private BalancePort balancePort;
 
+    @Mock
+    private OrderSagaOrchestrator orderSagaOrchestrator;
+
     private OrderService orderService;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        orderService = new OrderService(orderRepository, productPort, couponPort, balancePort);
+        orderService = new OrderService(orderRepository, productPort, couponPort, balancePort, orderSagaOrchestrator);
     }
 
     @Test
@@ -65,6 +69,8 @@ public class OrderServiceTest {
             return order;
         });
 
+        doNothing().when(orderSagaOrchestrator).startOrderSaga(any(Order.class));
+
         Order result = orderService.createOrder(1L, List.of(1L), List.of(2), List.of("CODE"));
 
         // 총액 = (상품가격 * 수량) - 쿠폰할인 = (1000 * 2) - 500 = 1500
@@ -74,7 +80,7 @@ public class OrderServiceTest {
 
     @Test
     void createOrder_stock_insufficient() {
-        ProductFeignAdapter.ProductDto productDto = new ProductFeignAdapter.ProductDto();
+        ProductPort.ProductDto productDto = new ProductPort.ProductDto();
         productDto.setId(1L);
         productDto.setName("P1");
         productDto.setPrice(BigDecimal.valueOf(1000));
@@ -93,13 +99,14 @@ public class OrderServiceTest {
         order.setTotalPrice(BigDecimal.valueOf(1000));
 
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        doNothing().when(balancePort).deductBalance(anyLong(), any(BigDecimal.class));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        doNothing().when(orderSagaOrchestrator).startPaymentSaga(any(Order.class));
 
         Order result = orderService.payOrder(1L);
 
-        assertEquals("PAID", result.getStatus());
-        verify(balancePort).deductBalance(1L, BigDecimal.valueOf(1000));
+        assertEquals("CONFIRMED", result.getStatus()); // Saga에서 상태 변경됨
+        verify(orderSagaOrchestrator).startPaymentSaga(any(Order.class));
     }
 
     @Test
@@ -110,11 +117,12 @@ public class OrderServiceTest {
         order.setTotalPrice(BigDecimal.valueOf(1000));
 
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        doThrow(new RuntimeException("잔액 부족")).when(balancePort).deductBalance(anyLong(), any(BigDecimal.class));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
 
+        // Saga 실패 시뮬레이션
+        doThrow(new RuntimeException("결제 처리 실패")).when(orderSagaOrchestrator).startPaymentSaga(any(Order.class));
+
         assertThrows(RuntimeException.class, () -> orderService.payOrder(1L));
-        assertEquals("FAILED", order.getStatus());
     }
 
     @Test

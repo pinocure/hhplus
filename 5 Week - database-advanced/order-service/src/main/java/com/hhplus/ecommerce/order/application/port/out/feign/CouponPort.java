@@ -11,6 +11,7 @@ public interface CouponPort {
 
     void validateCoupon(String couponCode);
     void cancelCoupon(String couponCode);
+    void useCoupon(String couponCode);
 
     BigDecimal getCouponDiscountAmount(String couponCode);
 

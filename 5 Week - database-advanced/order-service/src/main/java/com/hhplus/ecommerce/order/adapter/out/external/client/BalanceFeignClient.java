@@ -16,8 +16,8 @@ import java.math.BigDecimal;
 @FeignClient(name = "balance-service", url = "${services.balance.url}")
 public interface BalanceFeignClient {
 
-    @GetMapping("/balances/{userId}")
-    BigDecimal getBalance(@PathVariable("userId") Long userId);
+    @GetMapping("/balances")
+    BigDecimal getBalance(@RequestParam("userId") Long userId);
 
     @PostMapping("/balances/deduct")
     void deductBalance(@RequestParam("userId") Long userId, @RequestParam("amount") BigDecimal amount);

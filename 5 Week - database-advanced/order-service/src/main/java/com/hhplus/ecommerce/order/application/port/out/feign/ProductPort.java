@@ -13,6 +13,8 @@ public interface ProductPort {
     void deductStock(Long productId, int quantity);
     void reserveStock(Long productId, int quantity);
     void cancelReservation(Long productId, int quantity);
+    void confirmStock(Long productId, int quantity);
+    void restoreStock(Long productId, int quantity);
 
     // DTO 정의
     class ProductDto {

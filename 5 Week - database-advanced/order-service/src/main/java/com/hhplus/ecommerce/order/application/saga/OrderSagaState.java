@@ -2,7 +2,13 @@ package com.hhplus.ecommerce.order.application.saga;
 
 import com.hhplus.ecommerce.order.adapter.out.persistence.saga.SagaStateRepository;
 import com.hhplus.ecommerce.order.domain.saga.SagaTransaction;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
 
 /**
  * 역할: Saga 상태 관리 서비스
@@ -20,33 +26,33 @@ public class OrderSagaState {
 
     public void create(String sagaId, Long orderId) {
         SagaTransaction saga = new SagaTransaction(sagaId, orderId);
-        sagaStateRepository.save(saga);
+        sagaStateRepository.saveSaga(saga);
     }
 
     public void updateStep(String sagaId, String step) {
         SagaTransaction saga = sagaStateRepository.findSagaById(sagaId)
-                .orElseThrow(() -> new IllegalStateException("Saga update error : " + sagaId));
+                .orElseThrow(() -> new IllegalStateException("Saga not found: " + sagaId));
         saga.addStep(step);
-        sagaStateRepository.save(saga);
+        sagaStateRepository.saveSaga(saga);
     }
 
     public void complete(String sagaId) {
         SagaTransaction saga = sagaStateRepository.findSagaById(sagaId)
-                .orElseThrow(() -> new IllegalStateException("Saga complete error : " + sagaId));
+                .orElseThrow(() -> new IllegalStateException("Saga not found: " + sagaId));
         saga.complete();
-        sagaStateRepository.save(saga);
+        sagaStateRepository.saveSaga(saga);
     }
 
     public void fail(String sagaId) {
         SagaTransaction saga = sagaStateRepository.findSagaById(sagaId)
-                .orElseThrow(() -> new IllegalStateException("Saga fail error : " + sagaId));
+                .orElseThrow(() -> new IllegalStateException("Saga not found: " + sagaId));
         saga.fail();
-        sagaStateRepository.save(saga);
+        sagaStateRepository.saveSaga(saga);
     }
 
     public String getLastStep(String sagaId) {
         SagaTransaction saga = sagaStateRepository.findSagaById(sagaId)
-                .orElseThrow(() -> new IllegalStateException("Saga last error : " + sagaId));
+                .orElseThrow(() -> new IllegalStateException("Saga not found: " + sagaId));
         return saga.getCurrentStep();
     }
 

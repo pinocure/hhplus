@@ -48,6 +48,15 @@ public class CouponFeignAdapter implements CouponPort {
         }
     }
 
+    @Override
+    public void useCoupon(String couponCode) {
+        try {
+            couponFeignClient.useCoupon(couponCode);
+        } catch (Exception e) {
+            throw new RuntimeException("쿠폰 사용 실패 : " + e.getMessage());
+        }
+    }
+
 }
 
 

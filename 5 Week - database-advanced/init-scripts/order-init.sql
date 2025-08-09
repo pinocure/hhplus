@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS order_product (
 );
 
 CREATE TABLE IF NOT EXISTS saga_state (
-     id VARCHAR(255) PRIMARY KEY,
+    id VARCHAR(255) PRIMARY KEY,
     order_id BIGINT NOT NULL,
     status VARCHAR(50) NOT NULL,
     current_step VARCHAR(100),

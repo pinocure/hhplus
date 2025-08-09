@@ -7,6 +7,7 @@ import com.hhplus.ecommerce.order.domain.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
@@ -35,58 +36,112 @@ public class OrderSagaOrchestrator {
         orderSagaState.create(sagaId, order.getId());
 
         try {
-            // 1. 재고 예약
+            // 재고 예약
             order.getItems().forEach(item -> {
                 productPort.reserveStock(item.getOrderProductId(), item.getQuantity());
             });
             orderSagaState.updateStep(sagaId, "STOCK_RESERVED");
 
-            // 2. 쿠폰 검증
+            // 쿠폰 검증 및 사용
             order.getCoupons().forEach(coupon -> {
                 couponPort.validateCoupon(coupon.getCouponCode());
+                couponPort.useCoupon(coupon.getCouponCode());
             });
-            orderSagaState.updateStep(sagaId, "COUPON_VALIDATED");
+            orderSagaState.updateStep(sagaId, "COUPON_USED");
 
-            order.confirm();
+            // Saga 완료
             orderSagaState.complete(sagaId);
+            order.confirm();
+
         } catch (Exception e) {
-            // 보상 트랜잭션 실행
-            compensate(sagaId, order);
-            throw new RuntimeException("주문 처리 실패", e);
+            compensateOrderSaga(sagaId, order);
+            orderSagaState.fail(sagaId);
+            throw new RuntimeException("주문 생성 실패: " + e.getMessage(), e);
         }
     }
 
-    private void compensate(String sagaId, Order order) {
-        // 역순으로 보상트랜잭션 실행
+    @Transactional
+    public void startPaymentSaga(Order order) {
+        String sagaId = generateSagaId();
+        orderSagaState.create(sagaId, order.getId());
+
+        try {
+            // 잔액 차감
+            BigDecimal totalAmount = order.getTotalPrice();
+            balancePort.deductBalance(order.getUserId(), totalAmount);
+            orderSagaState.updateStep(sagaId, "BALANCE_DEDUCTED");
+
+            // 재고 확정
+            order.getItems().forEach(item -> {
+                productPort.confirmStock(item.getOrderProductId(), item.getQuantity());
+            });
+            orderSagaState.updateStep(sagaId, "STOCK_CONFIRMED");
+
+            // Saga 완료
+            orderSagaState.complete(sagaId);
+            order.complete();
+
+        } catch (Exception e) {
+            compensatePaymentSaga(sagaId, order);
+            orderSagaState.fail(sagaId);
+            throw new RuntimeException("결제 처리 실패: " + e.getMessage(), e);
+        }
+    }
+
+    private void compensateOrderSaga(String sagaId, Order order) {
         String lastStep = orderSagaState.getLastStep(sagaId);
 
-        if ("COUPON_VALIDATED".equals(lastStep)) {
+        // 역순으로 보상 트랜잭션 실행
+        if ("COUPON_USED".equals(lastStep) || "STOCK_RESERVED".equals(lastStep)) {
             // 쿠폰 사용 취소
             order.getCoupons().forEach(coupon -> {
                 try {
                     couponPort.cancelCoupon(coupon.getCouponCode());
                 } catch (Exception e) {
-                    // 보상 트랜잭션 실패 로깅
+                    // 보상 실패 무시
                 }
             });
         }
 
-        if ("STOCK_RESERVED".equals(lastStep) || "COUPON_VALIDATED".equals(lastStep)) {
+        if ("STOCK_RESERVED".equals(lastStep)) {
             // 재고 예약 취소
             order.getItems().forEach(item -> {
                 try {
                     productPort.cancelReservation(item.getOrderProductId(), item.getQuantity());
                 } catch (Exception e) {
-                    // 보상 트랜잭션 실패 로깅
+                    // 보상 실패 무시
+                }
+            });
+        }
+    }
+
+    private void compensatePaymentSaga(String sagaId, Order order) {
+        String lastStep = orderSagaState.getLastStep(sagaId);
+
+        // 역순으로 보상 트랜잭션 실행
+        if ("STOCK_CONFIRMED".equals(lastStep) || "BALANCE_DEDUCTED".equals(lastStep)) {
+            // 재고 복원
+            order.getItems().forEach(item -> {
+                try {
+                    productPort.restoreStock(item.getOrderProductId(), item.getQuantity());
+                } catch (Exception e) {
+                    // 보상 실패 무시
                 }
             });
         }
 
-        orderSagaState.fail(sagaId);
+        if ("BALANCE_DEDUCTED".equals(lastStep)) {
+            // 잔액 환불
+            try {
+                balancePort.refundBalance(order.getUserId(), order.getTotalPrice());
+            } catch (Exception e) {
+                // 보상 실패 무시
+            }
+        }
     }
 
     private String generateSagaId() {
-        return "SAGA - " + UUID.randomUUID().toString();
+        return "SAGA-" + UUID.randomUUID().toString();
     }
 
 }

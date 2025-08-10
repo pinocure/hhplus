@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS popular_product_view (
     last_updated DATETIME NOT NULL
 );
 
--- 상품 데이터 (5가지 카테고리별 100개씩, 총 500개)
+-- 상품 데이터 (5가지 카테고리별 10개씩, 총 50개)
 DELIMITER $$
 CREATE PROCEDURE insert_product_data()
 BEGIN
@@ -28,8 +28,8 @@ BEGIN
     DECLARE prod_price DECIMAL(19,2);
     DECLARE prod_stock INT;
 
-    WHILE i <= 500 DO
-        CASE ((i - 1) DIV 100)
+    WHILE i <= 50 DO
+        CASE ((i - 1) DIV 10)
             WHEN 0 THEN  -- 전자제품
                 SET prod_name = CONCAT('노트북_', LPAD((i MOD 100) + 1, 3, '0'));
                 SET prod_price = 500000 + (i MOD 10) * 100000;
@@ -55,8 +55,8 @@ BEGIN
         INSERT INTO product (name, price, stock, reserved_stock, version)
         VALUES (prod_name, prod_price, prod_stock, 0, 0);
 
-        -- 인기 상품 뷰에도 데이터 추가 (상위 100개만)
-        IF i <= 100 THEN
+        -- 인기 상품 뷰에도 데이터 추가 (상위 10개만)
+        IF i <= 10 THEN
             INSERT INTO popular_product_view (product_id, name, price, stock, sales_count, last_updated)
             VALUES (i, prod_name, prod_price, prod_stock, (1000 - i) * 10, NOW());
         END IF;

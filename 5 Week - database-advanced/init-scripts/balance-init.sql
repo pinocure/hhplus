@@ -6,14 +6,14 @@ CREATE TABLE IF NOT EXISTS balance (
     amount DECIMAL(19,2) NOT NULL
 );
 
--- 5가지 잔액 패턴으로 500개 데이터 생성
+-- 5가지 잔액 패턴으로 10개 데이터 생성
 DELIMITER $$
 CREATE PROCEDURE insert_balance_data()
 BEGIN
     DECLARE i INT DEFAULT 1;
     DECLARE balance_amount DECIMAL(19,2);
 
-    WHILE i <= 500 DO
+    WHILE i <= 10 DO
         CASE (i MOD 5)
             WHEN 0 THEN SET balance_amount = 0.00;        -- 잔액 없음
             WHEN 1 THEN SET balance_amount = 10000.00;    -- 1만원

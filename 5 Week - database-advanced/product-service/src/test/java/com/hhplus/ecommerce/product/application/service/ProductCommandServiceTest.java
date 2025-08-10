@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -23,7 +24,7 @@ public class ProductCommandServiceTest {
     private ProductCommandRepository productCommandRepository;
 
     @Mock
-    private ProductQueryRepository productQueryRepository;
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private ProductCommandService productCommandService;
@@ -32,7 +33,7 @@ public class ProductCommandServiceTest {
     void stock_deduct_success() {
         Product product = new Product(1L, "테스트 상품", new BigDecimal("10000"), 10, 0, 0L);
         product.setReservedStock(5);
-        when(productQueryRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(productCommandRepository.findById(1L)).thenReturn(Optional.of(product));
         when(productCommandRepository.save(any())).thenReturn(product);
 
         productCommandService.deductStock(1L, 3);

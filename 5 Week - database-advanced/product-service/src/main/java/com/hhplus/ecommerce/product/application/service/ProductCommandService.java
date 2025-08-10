@@ -17,14 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductCommandService implements ProductCommandUseCase {
 
     private final ProductCommandRepository commandRepository;
-    private final ProductQueryRepository queryRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public ProductCommandService(ProductCommandRepository commandRepository,
-                                 ProductQueryRepository queryRepository,
                                  ApplicationEventPublisher eventPublisher) {
         this.commandRepository = commandRepository;
-        this.queryRepository = queryRepository;
         this.eventPublisher = eventPublisher;
     }
 
@@ -32,7 +29,7 @@ public class ProductCommandService implements ProductCommandUseCase {
     @Override
     @Transactional
     public void deductStock(Long productId, int quantity) {
-        Product product = queryRepository.findById(productId)
+        Product product = commandRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
 
         product.setEventPublisher(eventPublisher);
@@ -43,7 +40,7 @@ public class ProductCommandService implements ProductCommandUseCase {
     @Override
     @Transactional
     public void reserveStock(Long productId, int quantity) {
-        Product product = queryRepository.findById(productId)
+        Product product = commandRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
 
         product.setEventPublisher(eventPublisher);
@@ -54,7 +51,7 @@ public class ProductCommandService implements ProductCommandUseCase {
     @Override
     @Transactional
     public void cancelReservation(Long productId, int quantity) {
-        Product product = queryRepository.findById(productId)
+        Product product = commandRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
 
         product.setEventPublisher(eventPublisher);

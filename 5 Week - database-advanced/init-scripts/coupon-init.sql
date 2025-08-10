@@ -29,7 +29,7 @@ INSERT INTO coupon_event (id, name, discount_amount, total_quantity, remaining_q
                           (4, 'VIP 전용 쿠폰', 20000.00, 100, 50, DATE_ADD(NOW(), INTERVAL 90 DAY), 0),
                           (5, '이벤트 쿠폰', 1000.00, 5000, 4000, DATE_ADD(NOW(), INTERVAL 14 DAY), 0);
 
--- 쿠폰 데이터 생성 (250개)
+-- 쿠폰 데이터 생성 (50개)
 DELIMITER $$
 CREATE PROCEDURE insert_coupon_data()
 BEGIN
@@ -38,7 +38,7 @@ BEGIN
     DECLARE disc_amount DECIMAL(19,2);
     DECLARE exp_date DATETIME;
 
-    WHILE i <= 250 DO
+    WHILE i <= 50 DO
         SET event_id = ((i - 1) MOD 5) + 1;
 
         SELECT discount_amount, expires_at INTO disc_amount, exp_date
@@ -47,7 +47,7 @@ BEGIN
         INSERT INTO coupon (code, user_id, coupon_event_id, discount_amount, issued_at, expires_at, used)
         VALUES (
            CONCAT('COUPON', LPAD(i, 6, '0')),
-           ((i - 1) MOD 200) + 1,  -- user_id 1~200 반복
+           ((i - 1) MOD 10) + 1,
             event_id,
             disc_amount,
             DATE_SUB(NOW(), INTERVAL (i MOD 30) DAY),

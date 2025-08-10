@@ -24,7 +24,7 @@ public class ProductCommandControllerTest {
     void stock_deduct_success() throws Exception {
         doNothing().when(productCommandUseCase).deductStock(1L, 5);
 
-        mockMvc.perform(post("/products/command/1/deduct")
+        mockMvc.perform(post("/products/1/deduct")
                         .param("quantity", "5"))
                 .andExpect(status().isOk());
     }

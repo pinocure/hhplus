@@ -1,5 +1,6 @@
 package com.hhplus.ecommerce.product.adapter.out.persistence.query;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -21,12 +22,22 @@ import java.time.LocalDateTime;
 public class PopularProductReadModel {
 
     @Id
+    @Column(name = "product_id")
     private Long productId;
 
+    @Column(nullable = false, length = 50)
     private String name;
+
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal price;
+
+    @Column(nullable = false)
     private Integer stock;
+
+    @Column(name = "sales_count", nullable = false)
     private Integer salesCount;
+
+    @Column(name = "last_updated", nullable = false)
     private LocalDateTime lastUpdated;
 
     public PopularProductReadModel(Long productId, String name, BigDecimal price, Integer stock, Integer salesCount, LocalDateTime lastUpdated) {
@@ -34,12 +45,17 @@ public class PopularProductReadModel {
         this.name = name;
         this.price = price;
         this.stock = stock;
-        this.salesCount = salesCount;
-        this.lastUpdated = lastUpdated;
+        this.salesCount = salesCount != null ? salesCount : 0;
+        this.lastUpdated = lastUpdated != null ? lastUpdated : LocalDateTime.now();
     }
 
     public void increaseSalesCount(int quantity) {
         this.salesCount += quantity;
+        this.lastUpdated = LocalDateTime.now();
+    }
+
+    public void updateStock(int newStock) {
+        this.stock = newStock;
         this.lastUpdated = LocalDateTime.now();
     }
 

@@ -1,5 +1,7 @@
 package com.hhplus.ecommerce.balance.domain;
 
+import com.hhplus.ecommerce.common.exception.BusinessException;
+import com.hhplus.ecommerce.common.exception.ErrorCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -36,7 +38,7 @@ public class Balance {
             throw new IllegalArgumentException("차감 금액은 1원 이상이어야 합니다.");
         }
         if (this.amount.compareTo(deductAmount) < 0) {
-            throw new IllegalArgumentException("잔액이 부족합니다.");
+            throw new BusinessException(ErrorCode.INSUFFICIENT_BALANCE);
         }
         this.amount = this.amount.subtract(deductAmount);
     }

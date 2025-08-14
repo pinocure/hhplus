@@ -8,12 +8,6 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
-
-/**
- * 역할: Balance 서비스와의 통신을 담당하는 Feign 기반 어댑터
- * 책임: Feign Client를 통해 Balance 서비스의 기능을 호출
- */
-
 @Component
 @RequiredArgsConstructor
 public class BalanceFeignAdapter implements BalancePort {

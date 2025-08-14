@@ -10,11 +10,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 
-/**
- * 역할: Order JPA 엔티티 클래스
- * 책임: 주문 테이블과 매핑되는 JPA 엔티티로, DB 스키마와 도메인 모델 간의 변환을 담당
- */
-
 @Entity
 @Table(name = "orders")
 @Getter

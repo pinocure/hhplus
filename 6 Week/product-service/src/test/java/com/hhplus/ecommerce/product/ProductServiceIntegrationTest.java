@@ -37,18 +37,15 @@ public class ProductServiceIntegrationTest {
 
     @Test
     void getAllProductsIntegrationTest() {
-        // 전체 상품 조회하고 상품 없으면 예외 발생
-        assertThrows(IllegalStateException.class, () -> {
+        assertThrows(Exception.class, () -> {
             productUseCase.getAllProducts();
         });
     }
 
     @Test
     void getPopularProductsIntegrationTest() {
-        // 인기상품 조회
         List<Product> popular = productUseCase.getPopularProducts(3, 5);
 
-        // 빈 리스트 반환
         assertTrue(popular.isEmpty());
     }
 

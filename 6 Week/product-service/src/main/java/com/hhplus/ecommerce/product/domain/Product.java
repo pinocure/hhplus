@@ -1,14 +1,11 @@
 package com.hhplus.ecommerce.product.domain;
 
+import com.hhplus.ecommerce.common.exception.BusinessException;
+import com.hhplus.ecommerce.common.exception.ErrorCode;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-
-/**
- * 역할: product 도메인 엔티티 클래스
- * 책임: 상품 속성(가격, 재고 등)과 도메인 로직을 캡슐화하여 비즈니스 규칙을 유지
- */
 
 @Getter
 @Setter
@@ -38,7 +35,7 @@ public class Product {
     // 재고 예약
     public void reserveStock(int quantity) {
         if (!hasEnoughStock(quantity)) {
-            throw new IllegalArgumentException("재고가 부족합니다.");
+            throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
         }
         this.reservedStock += quantity;
         this.version++;
@@ -46,7 +43,7 @@ public class Product {
 
     public void deductStock(int quantity) {
         if (this.reservedStock < quantity) {
-            throw new IllegalArgumentException("예약 재고가 부족합니다.");
+            throw new BusinessException(ErrorCode.INSUFFICIENT_RESERCE_STOCK);
         }
         this.stock -= quantity;
         this.reservedStock -= quantity;

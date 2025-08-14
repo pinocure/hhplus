@@ -7,11 +7,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * 역할: order 웹 컨트롤러 클래스 (Inbound Adapter)
- * 책임: 주문 관련 HTTP 요청을 처리하고, OrderUseCase를 호출하여 유즈케이스 흐름을 트리거
- */
-
 @RestController
 @RequestMapping("/orders")
 public class OrderController {

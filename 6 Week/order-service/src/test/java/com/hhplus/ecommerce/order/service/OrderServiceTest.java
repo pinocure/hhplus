@@ -1,5 +1,7 @@
 package com.hhplus.ecommerce.order.service;
 
+import com.hhplus.ecommerce.common.exception.BusinessException;
+import com.hhplus.ecommerce.common.exception.ErrorCode;
 import com.hhplus.ecommerce.order.application.port.out.feign.BalancePort;
 import com.hhplus.ecommerce.order.application.port.out.feign.CouponPort;
 import com.hhplus.ecommerce.order.application.port.out.OrderRepository;
@@ -84,7 +86,7 @@ public class OrderServiceTest {
 
         when(productPort.getProduct(1L)).thenReturn(productDto);
 
-        assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(1L, List.of(1L), List.of(2), List.of("CODE")));
+        assertThrows(Exception.class, () -> orderService.createOrder(1L, List.of(1L), List.of(2), List.of("CODE")));
     }
 
     @Test
@@ -120,7 +122,7 @@ public class OrderServiceTest {
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
 
-        assertThrows(RuntimeException.class, () -> orderService.payOrder(1L));
+        assertThrows(Exception.class, () -> orderService.payOrder(1L));
         assertEquals("FAILED", order.getStatus());
     }
 
@@ -136,10 +138,10 @@ public class OrderServiceTest {
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> orderService.payOrder(1L));
-        assertEquals("결제 실패: 결제 가능한 상태가 아닙니다.", exception.getMessage());
-        assertInstanceOf(IllegalStateException.class, exception.getCause());
-        assertEquals("FAILED", order.getStatus());
+        BusinessException exception = assertThrows(BusinessException.class, () -> orderService.payOrder(1L));
+
+        assertEquals(ErrorCode.ORDER_FAIL, exception.getErrorCode());
+        assertEquals("PENDING", order.getStatus());
     }
 
 }

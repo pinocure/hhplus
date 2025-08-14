@@ -1,15 +1,12 @@
 package com.hhplus.ecommerce.coupon.domain;
 
+import com.hhplus.ecommerce.common.exception.BusinessException;
+import com.hhplus.ecommerce.common.exception.ErrorCode;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-/**
- * 역할: couponEvent 도메인 엔티티 클래스
- * 책임: 쿠폰 이벤트 속성과 도메인 로직을 캡슐화하여 비즈니스 규칙을 유지
- */
 
 @Getter
 @Setter
@@ -35,10 +32,10 @@ public class CouponEvent {
 
     public void issueCoupon() {
         if (remainingQuantity <= 0) {
-            throw new IllegalStateException("쿠폰이 모두 발급되었습니다.");
+            throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
         }
         if (LocalDateTime.now().isAfter(expiresAt)) {
-            throw new IllegalStateException("쿠폰 이벤트가 만료되었습니다.");
+            throw new BusinessException(ErrorCode.COUPON_EXPIRED);
         }
         this.remainingQuantity--;
     }

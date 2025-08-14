@@ -1,5 +1,7 @@
 package com.hhplus.ecommerce.product.application.service;
 
+import com.hhplus.ecommerce.common.exception.BusinessException;
+import com.hhplus.ecommerce.common.exception.ErrorCode;
 import com.hhplus.ecommerce.product.application.port.in.ProductUseCase;
 import com.hhplus.ecommerce.product.application.port.out.ProductRepository;
 import com.hhplus.ecommerce.product.domain.Product;
@@ -10,11 +12,6 @@ import jakarta.persistence.PessimisticLockException;
 import jakarta.persistence.LockTimeoutException;
 
 import java.util.List;
-
-/**
- * 역할: product 서비스 구현 클래스
- * 책임: ProductUseCase를 구현하며, 유즈케이스 흐름을 조율하고 도메인 로직을 호출하며 포트들을 통해 외부와 상호작용
- */
 
 @Service
 public class ProductService implements ProductUseCase {
@@ -30,7 +27,7 @@ public class ProductService implements ProductUseCase {
     public List<Product> getAllProducts() {
         List<Product> products = productRepository.findAll();
         if (products.isEmpty()) {
-            throw new IllegalStateException("상품이 품절되었습니다.");
+            throw new BusinessException(ErrorCode.PRODUCT_FINISH);
         }
         return products;
     }
@@ -38,7 +35,7 @@ public class ProductService implements ProductUseCase {
     @Override
     public Product getProduct(Long productId) {
         return productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
     }
 
     @Override
@@ -53,11 +50,11 @@ public class ProductService implements ProductUseCase {
         try {
             // 비관적 락으로 조회
             Product product = productRepository.findByIdWithLock(productId)
-                    .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
             product.reserveStock(quantity);
             productRepository.save(product);
         } catch (PessimisticLockException | LockTimeoutException e) {
-            throw new IllegalStateException("재고 처리 중 잠금 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", e);
+            throw new BusinessException(ErrorCode.LOCK_ERROR);
         }
     }
 
@@ -67,11 +64,11 @@ public class ProductService implements ProductUseCase {
         try {
             // 비관적 락으로 조회
             Product product = productRepository.findByIdWithLock(productId)
-                    .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
             product.deductStock(quantity);
             productRepository.save(product);
         } catch (PessimisticLockException | LockTimeoutException e) {
-            throw new IllegalStateException("재고 처리 중 잠금 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", e);
+            throw new BusinessException(ErrorCode.LOCK_ERROR);
         }
     }
 
@@ -80,11 +77,11 @@ public class ProductService implements ProductUseCase {
         try {
             // 비관적 락으로 조회
             Product product = productRepository.findByIdWithLock(productId)
-                    .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
             product.rollbackReservedStock(quantity);
             productRepository.save(product);
         } catch (PessimisticLockException | LockTimeoutException e) {
-            throw new IllegalStateException("재고 롤백 중 잠금 오류가 발생했습니다.", e);
+            throw new BusinessException(ErrorCode.LOCK_ERROR);
         }
     }
 

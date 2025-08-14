@@ -1,5 +1,7 @@
 package com.hhplus.ecommerce.order.application.service;
 
+import com.hhplus.ecommerce.common.exception.BusinessException;
+import com.hhplus.ecommerce.common.exception.ErrorCode;
 import com.hhplus.ecommerce.order.application.port.in.OrderUseCase;
 import com.hhplus.ecommerce.order.application.port.out.feign.BalancePort;
 import com.hhplus.ecommerce.order.application.port.out.feign.CouponPort;
@@ -21,12 +23,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
-
-/**
- * 역할: order 서비스 구현 클래스
- * 책임: OrderUseCase를 구현하며, 유즈케이스 흐름을 조율하고 도메인 로직을 호출하며 포트들을 통해 외부와 상호작용.
- *      외부 서비스와 HTTP 통신을 통해 비즈니스 로직 처리
- */
 
 @Service
 public class OrderService implements OrderUseCase {
@@ -116,10 +112,10 @@ public class OrderService implements OrderUseCase {
         try {
             // 비관적 락으로 주문 조회 (타임아웃 설정됨)
             Order order = orderRepository.findByIdWithPessimisticLock(orderId)
-                    .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
             if (!"CONFIRMED".equals(order.getStatus())) {
-                throw new IllegalStateException("결제 가능한 상태가 아닙니다.");
+                throw new BusinessException(ErrorCode.ORDER_FAIL);
             }
 
             BigDecimal totalPrice = order.getTotalPrice();
@@ -130,7 +126,7 @@ public class OrderService implements OrderUseCase {
             // 재고 차감
             order.getItems().forEach(item -> {
                 OrderProduct orderProduct = orderRepository.findOrderProductById(item.getOrderProductId())
-                        .orElseThrow(() -> new RuntimeException("주문 상품 정보를 찾을 수 없습니다."));
+                        .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
                 productPort.deductStock(orderProduct.getProductId(), item.getQuantity());
             });
 
@@ -139,9 +135,10 @@ public class OrderService implements OrderUseCase {
 
             order.pay();
             return orderRepository.save(order);
-
+        } catch (BusinessException e) {
+            throw e;
         } catch (PessimisticLockException | LockTimeoutException e) {
-            throw new IllegalStateException("결제 처리 중 잠금 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", e);
+            throw new BusinessException(ErrorCode.LOCK_ERROR);
         } catch (Exception e) {
             // 결제 실패 시 롤백
             Order order = orderRepository.findById(orderId).orElse(null);
@@ -149,7 +146,7 @@ public class OrderService implements OrderUseCase {
                 order.fail();
                 orderRepository.save(order);
             }
-            throw new RuntimeException("결제 실패: " + e.getMessage(), e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "결제 실패: " + e.getMessage());
         }
     }
 

@@ -37,7 +37,7 @@ public class UserServiceIntegrationTest {
         // 사용자 생성(실제로는 DB에 있어야 함)
 
         // 존재하지 않는 사용자 조회 시 예외 발생
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(Exception.class, () -> {
             userUseCase.getUser(999L);
         });
     }

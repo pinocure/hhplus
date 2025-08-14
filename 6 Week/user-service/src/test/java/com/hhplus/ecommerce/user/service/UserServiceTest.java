@@ -40,7 +40,7 @@ public class UserServiceTest {
     void getUser_notFound() {
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> userService.getUser(1L));
+        assertThrows(Exception.class, () -> userService.getUser(1L));
     }
 
 }

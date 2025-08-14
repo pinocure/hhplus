@@ -7,11 +7,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * 역할: Order 도메인 엔티티 클래스
- * 책임: 주문 속성과 도메인 로직을 캡슐화하여 비즈니스 규칙을 유지
- */
-
 @Getter
 @Setter
 public class Order {

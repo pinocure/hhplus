@@ -12,11 +12,6 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * 역할: Product JPA Repository 인터페이스
- * 책임: Spring Data JPA를 통해 상품 데이터의 실제 DB 접근을 담당
- */
-
 public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Long> {
 
     @Query("SELECT p FROM ProductJpaEntity p ORDER BY p.stock ASC")

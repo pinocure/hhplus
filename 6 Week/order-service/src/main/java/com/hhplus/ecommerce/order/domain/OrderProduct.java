@@ -7,11 +7,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
-/**
- * 역할: OrderProduct 도메인 엔티티 클래스 (MSA 버전)
- * 책임: 주문에서 참조할 상품 정보를 캡슐화 (외부 서비스 데이터)
- */
-
 @Getter
 @Setter
 public class OrderProduct {

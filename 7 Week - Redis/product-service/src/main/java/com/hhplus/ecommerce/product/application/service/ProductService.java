@@ -78,8 +78,17 @@ public class ProductService implements ProductUseCase {
     }
 
     @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void restoreStock(Long productId, int quantity) {
+        try {
+            Product product = productRepository.findByIdWithLock(productId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
 
+            product.setStock(product.getStock() + quantity);
+            productRepository.save(product);
+        } catch (PessimisticLockException | LockTimeoutException e) {
+            throw new BusinessException(ErrorCode.LOCK_ERROR);
+        }
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)

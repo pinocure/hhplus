@@ -11,5 +11,6 @@ public interface ProductUseCase {
     List<Product> getPopularProducts(int days, int limit);  // 인기 상품 조회
 
     void deductStock(Long productId, int quantity);
+    void restoreStock(Long productId, int quantity);
 
 }

@@ -29,6 +29,15 @@ public class ProductFeignAdapter implements ProductPort {
             throw new RuntimeException("재고 차감 실패 : " + e.getMessage());
         }
     }
+
+    @Override
+    public void restoreStock(Long productId, int quantity) {
+        try {
+            productFeignClient.restoreStock(productId, quantity);
+        } catch (FeignException e) {
+            throw new RuntimeException("재고 복구 실패 : " + e.getMessage());
+        }
+    }
 }
 
 

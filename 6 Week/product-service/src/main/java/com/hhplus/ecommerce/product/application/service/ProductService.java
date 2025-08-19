@@ -65,11 +65,21 @@ public class ProductService implements ProductUseCase {
             // 비관적 락으로 조회
             Product product = productRepository.findByIdWithLock(productId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-            product.deductStock(quantity);
+
+            if (product.getStock() < quantity) {
+                throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
+            }
+
+            product.setStock(product.getStock() - quantity);
             productRepository.save(product);
         } catch (PessimisticLockException | LockTimeoutException e) {
             throw new BusinessException(ErrorCode.LOCK_ERROR);
         }
+    }
+
+    @Override
+    public void restoreStock(Long productId, int quantity) {
+
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -78,7 +88,8 @@ public class ProductService implements ProductUseCase {
             // 비관적 락으로 조회
             Product product = productRepository.findByIdWithLock(productId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-            product.rollbackReservedStock(quantity);
+
+            product.setStock(product.getStock() + quantity);
             productRepository.save(product);
         } catch (PessimisticLockException | LockTimeoutException e) {
             throw new BusinessException(ErrorCode.LOCK_ERROR);

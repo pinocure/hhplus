@@ -39,6 +39,12 @@ public class ProductController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{productId}/restore")
+    public ResponseEntity<Void> restoreStock(@PathVariable Long productId, @RequestParam int quantity) {
+        productUseCase.restoreStock(productId, quantity);
+        return ResponseEntity.ok().build();
+    }
+
 }
 
 

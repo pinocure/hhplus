@@ -6,6 +6,7 @@ public interface ProductPort {
 
     ProductDto getProduct(Long productId);
     void deductStock(Long productId, int quantity);
+    void restoreStock(Long productId, int quantity);
 
     // DTO 정의
     class ProductDto {

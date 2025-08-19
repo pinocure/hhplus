@@ -109,6 +109,10 @@ public class OrderService implements OrderUseCase {
     @Override
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public Order payOrder(Long orderId) {
+
+        // 재고 차감 내역 추적
+        List<StockDeduction> stockDeductions = new ArrayList<>();
+
         try {
             // 비관적 락으로 주문 조회 (타임아웃 설정됨)
             Order order = orderRepository.findByIdWithPessimisticLock(orderId)
@@ -124,11 +128,14 @@ public class OrderService implements OrderUseCase {
             balancePort.deductBalance(order.getUserId(), totalPrice);
 
             // 재고 차감
-            order.getItems().forEach(item -> {
+            for (OrderItem item : order.getItems()) {
                 OrderProduct orderProduct = orderRepository.findOrderProductById(item.getOrderProductId())
                         .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
+                stockDeductions.add(new StockDeduction(orderProduct.getProductId(), item.getQuantity()));
+
                 productPort.deductStock(orderProduct.getProductId(), item.getQuantity());
-            });
+            }
 
             // 쿠폰 사용 처리
             order.getCoupons().forEach(coupon -> coupon.setUsed(true));
@@ -140,18 +147,46 @@ public class OrderService implements OrderUseCase {
         } catch (PessimisticLockException | LockTimeoutException e) {
             throw new BusinessException(ErrorCode.LOCK_ERROR);
         } catch (Exception e) {
-            // 결제 실패 시 롤백
-            Order order = orderRepository.findById(orderId).orElse(null);
-            if (order != null) {
-                order.fail();
-                orderRepository.save(order);
-            }
+            rollbackOrder(orderId, stockDeductions);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "결제 실패: " + e.getMessage());
         }
     }
 
-}
 
+    private void rollbackOrder(Long orderId, List<StockDeduction> stockDeductions) {
+        try {
+            Order order = orderRepository.findById(orderId).orElse(null);
+
+            if (order != null) {
+                order.fail();
+
+                for (StockDeduction deduction : stockDeductions) {
+                    try {
+                        productPort.restoreStock(deduction.productId, deduction.quantity);
+                    } catch (Exception e) {
+                        System.err.println(e.getMessage());
+                    }
+                }
+                orderRepository.save(order);
+            }
+        } catch (Exception e ) {
+            System.err.println(e.getMessage());
+        }
+    }
+
+
+    private static class StockDeduction {
+        private final Long productId;
+        private final Integer quantity;
+
+        public StockDeduction(Long productId, Integer quantity) {
+            this.productId = productId;
+            this.quantity = quantity;
+        }
+    }
+
+
+}
 
 
 

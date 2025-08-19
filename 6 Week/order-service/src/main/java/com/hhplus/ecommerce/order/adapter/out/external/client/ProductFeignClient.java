@@ -19,4 +19,8 @@ public interface ProductFeignClient {
     @PostMapping("/products/{productId}/deduct")
     void deductStock(@PathVariable("productId") Long productId,
                      @RequestParam("quantity") int quantity);
+
+    @PostMapping("/products/{productId}/restore")
+    void restoreStock(@PathVariable("productId") Long ProductId,
+                      @RequestParam("quantity") int quantity);
 }

@@ -2,6 +2,7 @@ package com.hhplus.ecommerce.product.application.service;
 
 import com.hhplus.ecommerce.common.exception.BusinessException;
 import com.hhplus.ecommerce.common.exception.ErrorCode;
+import com.hhplus.ecommerce.common.lock.DistributedLock;
 import com.hhplus.ecommerce.product.application.port.in.ProductUseCase;
 import com.hhplus.ecommerce.product.application.port.out.ProductRepository;
 import com.hhplus.ecommerce.product.domain.Product;
@@ -41,68 +42,47 @@ public class ProductService implements ProductUseCase {
     @Override
     public List<Product> getPopularProducts(int days, int limit) {
         List<Product> popular = productRepository.findPopular(days, limit);
-
         return popular.isEmpty() ? List.of() : popular;
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
+    @DistributedLock(key = "lock:product:stock:#={productId}", waitTime = 3, leaseTime = 2)
     public void reserveStock(Long productId, int quantity, Long version) {
-        try {
-            // 비관적 락으로 조회
-            Product product = productRepository.findByIdWithLock(productId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-            product.reserveStock(quantity);
-            productRepository.save(product);
-        } catch (PessimisticLockException | LockTimeoutException e) {
-            throw new BusinessException(ErrorCode.LOCK_ERROR);
-        }
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        product.reserveStock(quantity);
+        productRepository.save(product);
     }
 
     @Override
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
+    @DistributedLock(key = "lock:product:stock:#={productId}", waitTime = 3, leaseTime = 2)
     public void deductStock(Long productId, int quantity) {
-        try {
-            // 비관적 락으로 조회
-            Product product = productRepository.findByIdWithLock(productId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
 
-            if (product.getStock() < quantity) {
-                throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
-            }
-
-            product.setStock(product.getStock() - quantity);
-            productRepository.save(product);
-        } catch (PessimisticLockException | LockTimeoutException e) {
-            throw new BusinessException(ErrorCode.LOCK_ERROR);
+        if (product.getStock() < quantity) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
         }
+
+        product.setStock(product.getStock() - quantity);
+        productRepository.save(product);
     }
 
     @Override
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
+    @DistributedLock(key = "lock:product:stock:#={productId}", waitTime = 3, leaseTime = 2)
     public void restoreStock(Long productId, int quantity) {
-        try {
-            Product product = productRepository.findByIdWithLock(productId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
 
-            product.setStock(product.getStock() + quantity);
-            productRepository.save(product);
-        } catch (PessimisticLockException | LockTimeoutException e) {
-            throw new BusinessException(ErrorCode.LOCK_ERROR);
+        if (product.getStock() < quantity) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
         }
-    }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void rollBackStock(Long productId, int quantity) {
-        try {
-            // 비관적 락으로 조회
-            Product product = productRepository.findByIdWithLock(productId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-
-            product.setStock(product.getStock() + quantity);
-            productRepository.save(product);
-        } catch (PessimisticLockException | LockTimeoutException e) {
-            throw new BusinessException(ErrorCode.LOCK_ERROR);
-        }
+        product.setStock(product.getStock() + quantity);
+        productRepository.save(product);
     }
 
 }

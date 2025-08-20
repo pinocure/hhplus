@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  mysql-balance:
+    image: mysql:8.0
+    container_name: mysql-balance
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: balance_db
+      MYSQL_USER: ruang
+      MYSQL_PASSWORD: ruang
+    ports:
+      - "3306:3306"
+    volumes:
+      - balance_data:/var/lib/mysql
+
+  mysql-coupon:
+    image: mysql:8.0
+    container_name: mysql-coupon
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: coupon_db
+      MYSQL_USER: ruang
+      MYSQL_PASSWORD: ruang
+    ports:
+      - "3307:3306"
+    volumes:
+      - coupon_data:/var/lib/mysql
+
+  mysql-order:
+    image: mysql:8.0
+    container_name: mysql-order
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: order_db
+      MYSQL_USER: ruang
+      MYSQL_PASSWORD: ruang
+    ports:
+      - "3308:3306"
+    volumes:
+      - order_data:/var/lib/mysql
+
+  mysql-product:
+    image: mysql:8.0
+    container_name: mysql-product
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: product_db
+      MYSQL_USER: ruang
+      MYSQL_PASSWORD: ruang
+    ports:
+      - "3309:3306"
+    volumes:
+      - product_data:/var/lib/mysql
+
+  mysql-user:
+    image: mysql:8.0
+    container_name: mysql-user
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: user_db
+      MYSQL_USER: ruang
+      MYSQL_PASSWORD: ruang
+    ports:
+      - "3310:3306"
+    volumes:
+      - user_data:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  balance_data:
+  coupon_data:
+  order_data:
+  product_data:
+  user_data:
+  redis_data:
+

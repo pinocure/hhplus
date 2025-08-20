@@ -5,6 +5,7 @@ import com.hhplus.ecommerce.balance.application.port.out.BalanceRepository;
 import com.hhplus.ecommerce.balance.domain.Balance;
 import com.hhplus.ecommerce.common.exception.BusinessException;
 import com.hhplus.ecommerce.common.exception.ErrorCode;
+import com.hhplus.ecommerce.common.lock.DistributedLock;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,17 +26,15 @@ public class BalanceService implements BalanceUseCase {
 
 
     @Override
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
+    @DistributedLock(key = "lock:balance:user:#={userId}", waitTime = 5, leaseTime = 3)
     public BigDecimal chargeBalance(Long userId, BigDecimal amount) {
-        try {
-            Optional<Balance> optionalBalance = balanceRepository.findByUserIdWithLock(userId);
-            Balance balance = optionalBalance.orElse(new Balance(userId, BigDecimal.ZERO));
-            balance.charge(amount);
-            Balance saved = balanceRepository.save(balance);
-            return saved.getAmount();
-        } catch (PessimisticLockException | LockTimeoutException e) {
-            throw new BusinessException(ErrorCode.LOCK_ERROR);
-        }
+        Balance balance = balanceRepository.findByUserId(userId)
+                .orElse(new Balance(userId, BigDecimal.ZERO));
+
+        balance.charge(amount);
+        Balance saved = balanceRepository.save(balance);
+        return saved.getAmount();
     }
 
     @Override
@@ -46,19 +45,18 @@ public class BalanceService implements BalanceUseCase {
     }
 
     @Override
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
+    @DistributedLock(key = "lock:balance:user:#={userId}", waitTime = 5, leaseTime = 3)
     public void deductBalance(Long userId, BigDecimal amount) {
-        try {
-            Optional<Balance> optionalBalance = balanceRepository.findByUserIdWithLock(userId);
-            Balance balance = optionalBalance.orElseThrow(() -> new BusinessException(ErrorCode.BALANCE_NOT_FOUND));
-            balance.deduct(amount);
-            balanceRepository.save(balance);
-        } catch (PessimisticLockException | LockTimeoutException e) {
-            throw new BusinessException(ErrorCode.LOCK_ERROR);
-        }
+        Balance balance = balanceRepository.findByUserId(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BALANCE_NOT_FOUND));
+
+        balance.deduct(amount);
+        balanceRepository.save(balance);
     }
 
 }
+
 
 
 

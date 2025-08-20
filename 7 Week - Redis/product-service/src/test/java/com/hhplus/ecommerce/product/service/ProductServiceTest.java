@@ -106,13 +106,13 @@ public class ProductServiceTest {
     }
 
     @Test
-    void rollbackReservedStock_success() {
+    void restoreReservedStock_success() {
         Product p1 = new Product(1L, "P1", BigDecimal.TEN, 10, 0, 0L);
         p1.setReservedStock(5);
         when(productRepository.findByIdWithLock(1L)).thenReturn(Optional.of(p1));
         when(productRepository.save(any(Product.class))).thenReturn(p1);
 
-        assertDoesNotThrow(() -> productService.rollBackStock(1L, 5));
+        assertDoesNotThrow(() -> productService.restoreStock(1L, 5));
 
         assertEquals(0, p1.getReservedStock());
     }

@@ -2,6 +2,7 @@ package com.hhplus.ecommerce.coupon.application.service;
 
 import com.hhplus.ecommerce.common.exception.BusinessException;
 import com.hhplus.ecommerce.common.exception.ErrorCode;
+import com.hhplus.ecommerce.common.lock.DistributedLock;
 import com.hhplus.ecommerce.coupon.application.port.in.CouponUseCase;
 import com.hhplus.ecommerce.coupon.application.port.out.CouponRepository;
 import com.hhplus.ecommerce.coupon.domain.Coupon;
@@ -28,51 +29,20 @@ public class CouponService implements CouponUseCase {
 
 
     @Override
+    @Transactional
+    @DistributedLock(key = "lock:coupon:event:#={eventId}:user:#={userId}", waitTime = 3, leaseTime = 2)
     public Coupon issueCoupon(Long userId, Long eventId) {
-        int maxRetries = 5;
-        int retryCount = 0;
-
-        while (retryCount < maxRetries) {
-            try {
-                return doIssueCoupon(userId, eventId);
-            } catch (OptimisticLockException | ObjectOptimisticLockingFailureException e) {
-                retryCount++;
-
-                if (retryCount >= maxRetries) {
-                    throw new BusinessException(ErrorCode.LOCK_ERROR);
-                }
-
-                // 재시도 전 대기 (exponential backoff)
-                try {
-                    Thread.sleep(10 + (long)(Math.random() * 50 * retryCount));
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    throw new BusinessException(ErrorCode.LOCK_ERROR);
-                }
-            }
-        }
-
-        throw new BusinessException(ErrorCode.COUPON_FAIL);
-    }
-
-    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
-    protected Coupon doIssueCoupon(Long userId, Long eventId) {
-        // 이벤트 조회
         CouponEvent event = couponRepository.findEventById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.COUPON_SOLD_OUT));
 
-        // 중복 발급 체크
         if (couponRepository.findByUserIdAndEventId(userId, eventId).isPresent()) {
-            throw new BusinessException(ErrorCode.COUPON_ALREADY_GET);
+            throw new BusinessException(ErrorCode.COUPON_ALREADY_USED);
         }
 
-        // 쿠폰 발급 가능 여부 체크 및 수량 감소
         event.issueCoupon();
 
-        // 이벤트 저장 (낙관적 락이 여기서 발생할 수 있음)
         couponRepository.saveEvent(event);
 
-        // 쿠폰 생성
         Coupon coupon = new Coupon(
                 UUID.randomUUID().toString(),
                 userId,
@@ -81,7 +51,6 @@ public class CouponService implements CouponUseCase {
                 event.getExpiresAt()
         );
 
-        // 쿠폰 저장
         return couponRepository.save(coupon);
     }
 

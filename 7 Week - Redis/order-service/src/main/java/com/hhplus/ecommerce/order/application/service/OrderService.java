@@ -2,6 +2,7 @@ package com.hhplus.ecommerce.order.application.service;
 
 import com.hhplus.ecommerce.common.exception.BusinessException;
 import com.hhplus.ecommerce.common.exception.ErrorCode;
+import com.hhplus.ecommerce.common.lock.DistributedLock;
 import com.hhplus.ecommerce.order.application.port.in.OrderUseCase;
 import com.hhplus.ecommerce.order.application.port.out.feign.BalancePort;
 import com.hhplus.ecommerce.order.application.port.out.feign.CouponPort;
@@ -32,15 +33,6 @@ public class OrderService implements OrderUseCase {
     private final CouponPort couponPort;
     private final BalancePort balancePort;
 
-    // 사용자별 결제 처리용 Lock (동일 사용자의 동시 결제 방지)
-    private final ConcurrentHashMap<Long, ReentrantLock> userLocks = new ConcurrentHashMap<>();
-
-    // 상품별 재고 처리용 Lock
-    private final ConcurrentHashMap<Long, ReentrantLock> productLocks = new ConcurrentHashMap<>();
-
-    // 쿠폰별 사용 처리용 Lock
-    private final ConcurrentHashMap<String, ReentrantLock> couponLocks = new ConcurrentHashMap<>();
-
     public OrderService(OrderRepository orderRepository, ProductPort productPort, CouponPort couponPort, BalancePort balancePort) {
         this.orderRepository = orderRepository;
         this.productPort = productPort;
@@ -49,7 +41,7 @@ public class OrderService implements OrderUseCase {
     }
 
     @Override
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public Order createOrder(Long userId, List<Long> productIds, List<Integer> quantities, List<String> couponCodes) {
         List<OrderItem> items = new ArrayList<>();
 
@@ -57,47 +49,34 @@ public class OrderService implements OrderUseCase {
             Long productId = productIds.get(i);
             Integer quantity = quantities.get(i);
 
-            // 상품별 Lock 획득
-            ReentrantLock productLock = productLocks.computeIfAbsent(productId, k -> new ReentrantLock());
-            productLock.lock();
-            try {
-                ProductPort.ProductDto productDto = productPort.getProduct(productId);
-                if (productDto.getStock() < quantity) {
-                    throw new IllegalArgumentException(productDto.getName() + "의 재고가 부족합니다.");
-                }
-
-                OrderProduct orderProduct = new OrderProduct(
-                        productDto.getId(),
-                        productDto.getName(),
-                        productDto.getPrice()
-                );
-
-                OrderProduct savedOrderProduct = orderRepository.saveOrderProduct(orderProduct);
-
-                OrderItem orderItem = new OrderItem(
-                        savedOrderProduct.getId(),
-                        quantity,
-                        productDto.getPrice()
-                );
-
-                items.add(orderItem);
-            } finally {
-                productLock.unlock();
+            ProductPort.ProductDto productDto = productPort.getProduct(productId);
+            if (productDto.getStock() < quantity) {
+                throw new IllegalArgumentException(productDto.getName() + "의 재고가 부족합니다.");
             }
+
+            OrderProduct orderProduct = new OrderProduct(
+                    productDto.getId(),
+                    productDto.getName(),
+                    productDto.getPrice()
+            );
+
+            OrderProduct savedOrderProduct = orderRepository.saveOrderProduct(orderProduct);
+
+            OrderItem orderItem = new OrderItem(
+                    savedOrderProduct.getId(),
+                    quantity,
+                    productDto.getPrice()
+            );
+
+            items.add(orderItem);
         });
 
-        // 쿠폰 처리 시 Lock 적용
+        // 쿠폰 처리 시
         List<OrderCoupon> coupons = new ArrayList<>();
         couponCodes.forEach(code -> {
-            ReentrantLock couponLock = couponLocks.computeIfAbsent(code, k -> new ReentrantLock());
-            couponLock.lock();
-            try {
-                couponPort.validateCoupon(code);
-                BigDecimal discountAmount = couponPort.getCouponDiscountAmount(code);
-                coupons.add(new OrderCoupon(code, discountAmount));
-            } finally {
-                couponLock.unlock();
-            }
+            couponPort.validateCoupon(code);
+            BigDecimal discountAmount = couponPort.getCouponDiscountAmount(code);
+            coupons.add(new OrderCoupon(code, discountAmount));
         });
 
         Order order = new Order(userId, items, coupons);
@@ -107,15 +86,15 @@ public class OrderService implements OrderUseCase {
     }
 
     @Override
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
+    @DistributedLock(key = "lock:order:pay:user:#={orderId}", waitTime = 5, leaseTime = 5)
     public Order payOrder(Long orderId) {
 
         // 재고 차감 내역 추적
         List<StockDeduction> stockDeductions = new ArrayList<>();
 
         try {
-            // 비관적 락으로 주문 조회 (타임아웃 설정됨)
-            Order order = orderRepository.findByIdWithPessimisticLock(orderId)
+            Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
             if (!"CONFIRMED".equals(order.getStatus())) {
@@ -124,10 +103,8 @@ public class OrderService implements OrderUseCase {
 
             BigDecimal totalPrice = order.getTotalPrice();
 
-            // 잔액 차감
             balancePort.deductBalance(order.getUserId(), totalPrice);
 
-            // 재고 차감
             for (OrderItem item : order.getItems()) {
                 OrderProduct orderProduct = orderRepository.findOrderProductById(item.getOrderProductId())
                         .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
@@ -137,15 +114,13 @@ public class OrderService implements OrderUseCase {
                 productPort.deductStock(orderProduct.getProductId(), item.getQuantity());
             }
 
-            // 쿠폰 사용 처리
             order.getCoupons().forEach(coupon -> coupon.setUsed(true));
 
             order.pay();
             return orderRepository.save(order);
+
         } catch (BusinessException e) {
             throw e;
-        } catch (PessimisticLockException | LockTimeoutException e) {
-            throw new BusinessException(ErrorCode.LOCK_ERROR);
         } catch (Exception e) {
             rollbackOrder(orderId, stockDeductions);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "결제 실패: " + e.getMessage());

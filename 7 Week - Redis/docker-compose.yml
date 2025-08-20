@@ -1,6 +1,19 @@
 version: '3.8'
 
 services:
+  mysql-order:
+    image: mysql:8.0
+    container_name: mysql-order
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: order_db
+      MYSQL_USER: ruang
+      MYSQL_PASSWORD: ruang
+    ports:
+      - "3307:3306"
+    volumes:
+      - order_data:/var/lib/mysql
+
   mysql-balance:
     image: mysql:8.0
     container_name: mysql-balance
@@ -10,7 +23,7 @@ services:
       MYSQL_USER: ruang
       MYSQL_PASSWORD: ruang
     ports:
-      - "3306:3306"
+      - "3308:3306"
     volumes:
       - balance_data:/var/lib/mysql
 
@@ -23,22 +36,9 @@ services:
       MYSQL_USER: ruang
       MYSQL_PASSWORD: ruang
     ports:
-      - "3307:3306"
+      - "3309:3306"
     volumes:
       - coupon_data:/var/lib/mysql
-
-  mysql-order:
-    image: mysql:8.0
-    container_name: mysql-order
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: order_db
-      MYSQL_USER: ruang
-      MYSQL_PASSWORD: ruang
-    ports:
-      - "3308:3306"
-    volumes:
-      - order_data:/var/lib/mysql
 
   mysql-product:
     image: mysql:8.0
@@ -49,7 +49,7 @@ services:
       MYSQL_USER: ruang
       MYSQL_PASSWORD: ruang
     ports:
-      - "3309:3306"
+      - "3310:3306"
     volumes:
       - product_data:/var/lib/mysql
 
@@ -62,7 +62,7 @@ services:
       MYSQL_USER: ruang
       MYSQL_PASSWORD: ruang
     ports:
-      - "3310:3306"
+      - "3311:3306"
     volumes:
       - user_data:/var/lib/mysql
 

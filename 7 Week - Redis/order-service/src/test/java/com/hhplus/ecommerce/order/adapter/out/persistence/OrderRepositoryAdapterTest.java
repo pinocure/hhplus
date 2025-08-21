@@ -1,5 +1,8 @@
 package com.hhplus.ecommerce.order.adapter.out.persistence;
 
+import com.hhplus.ecommerce.order.adapter.out.external.adapter.BalanceFeignAdapter;
+import com.hhplus.ecommerce.order.adapter.out.external.adapter.CouponFeignAdapter;
+import com.hhplus.ecommerce.order.adapter.out.external.adapter.ProductFeignAdapter;
 import com.hhplus.ecommerce.order.application.port.out.OrderRepository;
 import com.hhplus.ecommerce.order.domain.Order;
 import com.hhplus.ecommerce.order.domain.OrderProduct;
@@ -9,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -40,6 +44,15 @@ public class OrderRepositoryAdapterTest {
 
     @Autowired
     private OrderRepositoryAdapter repository;
+
+    @MockitoBean
+    private ProductFeignAdapter productFeignAdapter;
+
+    @MockitoBean
+    private CouponFeignAdapter couponFeignAdapter;
+
+    @MockitoBean
+    private BalanceFeignAdapter balanceFeignAdapter;
 
     @Test
     void save_and_find() {

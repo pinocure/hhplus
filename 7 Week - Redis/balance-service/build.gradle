@@ -83,7 +83,8 @@ test {
             '-Xmx1024m',
             '-XX:MaxMetaspaceSize=256m',
             '-Dspring.profiles.active=test',
-            '-Djava.awt.headless=true'
+            '-Djava.awt.headless=true',
+            '-Dfile.encoding=UTF-8'
     ]
 
     // 병렬 실행 비활성화 (Testcontainers 충돌 방지)

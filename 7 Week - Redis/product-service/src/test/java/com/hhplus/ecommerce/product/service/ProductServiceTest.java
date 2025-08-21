@@ -107,7 +107,7 @@ public class ProductServiceTest {
     @Test
     void restoreReservedStock_success() {
         Product p1 = new Product(1L, "P1", BigDecimal.TEN, 10, 0, 0L);
-        when(productRepository.findByIdWithLock(1L)).thenReturn(Optional.of(p1));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(p1));
         when(productRepository.save(any(Product.class))).thenReturn(p1);
 
         assertDoesNotThrow(() -> productService.restoreStock(1L, 5));

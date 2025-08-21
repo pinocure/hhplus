@@ -46,7 +46,7 @@ public class ProductService implements ProductUseCase {
     }
 
     @Transactional
-    @DistributedLock(key = "lock:product:stock:#={productId}", waitTime = 3, leaseTime = 2)
+    @DistributedLock(key = "lock:product:stock:#={p0}", waitTime = 3, leaseTime = 2)
     public void reserveStock(Long productId, int quantity, Long version) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -57,7 +57,7 @@ public class ProductService implements ProductUseCase {
 
     @Override
     @Transactional
-    @DistributedLock(key = "lock:product:stock:#={productId}", waitTime = 3, leaseTime = 2)
+    @DistributedLock(key = "lock:product:stock:#={p0}", waitTime = 3, leaseTime = 2)
     public void deductStock(Long productId, int quantity) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -72,7 +72,7 @@ public class ProductService implements ProductUseCase {
 
     @Override
     @Transactional
-    @DistributedLock(key = "lock:product:stock:#={productId}", waitTime = 3, leaseTime = 2)
+    @DistributedLock(key = "lock:product:stock:#={p0}", waitTime = 3, leaseTime = 2)
     public void restoreStock(Long productId, int quantity) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));

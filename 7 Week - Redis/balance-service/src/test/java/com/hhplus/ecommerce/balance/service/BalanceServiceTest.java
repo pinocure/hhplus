@@ -43,7 +43,7 @@ public class BalanceServiceTest {
     @Test
     void chargeBalance_existing_user() {
         Balance existing = new Balance(1L, new BigDecimal("500"));
-        when(balanceRepository.findByUserIdWithLock(1L)).thenReturn(Optional.of(existing));
+        when(balanceRepository.findByUserId(1L)).thenReturn(Optional.of(existing));
         when(balanceRepository.save(any(Balance.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         BigDecimal result = balanceService.chargeBalance(1L, new BigDecimal("500"));
@@ -71,7 +71,7 @@ public class BalanceServiceTest {
     @Test
     void deductBalance_success() {
         Balance balance = new Balance(1L, new BigDecimal("1000"));
-        when(balanceRepository.findByUserIdWithLock(1L)).thenReturn(Optional.of(balance));
+        when(balanceRepository.findByUserId(1L)).thenReturn(Optional.of(balance));
         when(balanceRepository.save(any(Balance.class))).thenReturn(balance);
 
         assertDoesNotThrow(() -> balanceService.deductBalance(1L, new BigDecimal("500")));

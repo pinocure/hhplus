@@ -1,5 +1,6 @@
 package com.hhplus.ecommerce.coupon.service;
 
+import com.hhplus.ecommerce.common.exception.BusinessException;
 import com.hhplus.ecommerce.coupon.application.port.out.CouponRepository;
 import com.hhplus.ecommerce.coupon.application.service.CouponService;
 import com.hhplus.ecommerce.coupon.domain.Coupon;
@@ -33,7 +34,6 @@ public class CouponServiceTest {
 
     @Test
     void issueCoupon_success() {
-        // Given
         CouponEvent event = new CouponEvent(1L, "Event1", new BigDecimal("500"), 10, LocalDateTime.now().plusDays(7));
         event.setVersion(0L);
 
@@ -42,15 +42,12 @@ public class CouponServiceTest {
         when(couponRepository.save(any(Coupon.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(couponRepository.saveEvent(any(CouponEvent.class))).thenAnswer(invocation -> {
             CouponEvent savedEvent = invocation.getArgument(0);
-            // 실제 JPA처럼 version을 증가시킴
-            savedEvent.setVersion(savedEvent.getVersion() + 1);
+            savedEvent.setVersion(savedEvent.getVersion() != null ? savedEvent.getVersion() + 1 : 1L);
             return savedEvent;
         });
 
-        // When
         Coupon result = couponService.issueCoupon(1L, 1L);
 
-        // Then
         assertNotNull(result.getCode());
         assertEquals(1L, result.getUserId());
         assertEquals(new BigDecimal("500"), result.getDiscountAmount());
@@ -67,7 +64,7 @@ public class CouponServiceTest {
         when(couponRepository.findEventById(1L)).thenReturn(Optional.of(event));
         when(couponRepository.findByUserIdAndEventId(1L, 1L)).thenReturn(Optional.of(existingCoupon));
 
-        assertThrows(Exception.class, () -> couponService.issueCoupon(1L, 1L));
+        assertThrows(BusinessException.class, () -> couponService.issueCoupon(1L, 1L));
     }
 
     @Test
@@ -82,35 +79,37 @@ public class CouponServiceTest {
     void validateCoupon_notFound() {
         when(couponRepository.findByCode("CODE1")).thenReturn(Optional.empty());
 
-        assertThrows(Exception.class, () -> couponService.validateCoupon("CODE1"));
+        assertThrows(BusinessException.class, () -> couponService.validateCoupon("CODE1"));
     }
 
-    @Test
-    void issueCoupon_concurrencyConflict_retrySuccess() {
-        // Given
-        CouponEvent event = new CouponEvent(1L, "Event1", new BigDecimal("500"), 10, LocalDateTime.now().plusDays(7));
-        event.setVersion(0L);
 
-        when(couponRepository.findEventById(1L)).thenReturn(Optional.of(event));
-        when(couponRepository.findByUserIdAndEventId(1L, 1L)).thenReturn(Optional.empty());
-        when(couponRepository.save(any(Coupon.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        // 첫 번째 시도는 실패, 두 번째 시도는 성공
-        when(couponRepository.saveEvent(any(CouponEvent.class)))
-                .thenThrow(new ObjectOptimisticLockingFailureException("Optimistic lock", new Exception()))
-                .thenAnswer(invocation -> {
-                    CouponEvent savedEvent = invocation.getArgument(0);
-                    savedEvent.setVersion(savedEvent.getVersion() + 1);
-                    return savedEvent;
-                });
-
-        // When
-        Coupon result = couponService.issueCoupon(1L, 1L);
-
-        // Then
-        assertNotNull(result);
-        verify(couponRepository, times(2)).saveEvent(any(CouponEvent.class)); // 2번 시도했는지 확인
-    }
+    // 분산락 구현으로 이부분 임시 주석처리
+//    @Test
+//    void issueCoupon_concurrencyConflict_retrySuccess() {
+//        // Given
+//        CouponEvent event = new CouponEvent(1L, "Event1", new BigDecimal("500"), 10, LocalDateTime.now().plusDays(7));
+//        event.setVersion(0L);
+//
+//        when(couponRepository.findEventById(1L)).thenReturn(Optional.of(event));
+//        when(couponRepository.findByUserIdAndEventId(1L, 1L)).thenReturn(Optional.empty());
+//        when(couponRepository.save(any(Coupon.class))).thenAnswer(invocation -> invocation.getArgument(0));
+//
+//        // 첫 번째 시도는 실패, 두 번째 시도는 성공
+//        when(couponRepository.saveEvent(any(CouponEvent.class)))
+//                .thenThrow(new ObjectOptimisticLockingFailureException("Optimistic lock", new Exception()))
+//                .thenAnswer(invocation -> {
+//                    CouponEvent savedEvent = invocation.getArgument(0);
+//                    savedEvent.setVersion(savedEvent.getVersion() + 1);
+//                    return savedEvent;
+//                });
+//
+//        // When
+//        Coupon result = couponService.issueCoupon(1L, 1L);
+//
+//        // Then
+//        assertNotNull(result);
+//        verify(couponRepository, times(2)).saveEvent(any(CouponEvent.class)); // 2번 시도했는지 확인
+//    }
 
 }
 

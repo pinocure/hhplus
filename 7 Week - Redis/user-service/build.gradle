@@ -58,3 +58,37 @@ dependencyManagement {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs += '-parameters'
+    options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+
+    timeout = Duration.ofMinutes(5)
+
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        showStandardStreams = false
+    }
+
+    jvmArgs = [
+            '-Xmx1024m',
+            '-XX:MaxMetaspaceSize=256m',
+            '-Dspring.profiles.active=test',
+            '-Djava.awt.headless=true'
+    ]
+
+    // 병렬 실행 비활성화 (Testcontainers 충돌 방지)
+    maxParallelForks = 1
+
+    // 테스트 재시도
+    failFast = false
+
+    environment "TESTCONTAINERS_REUSE_ENABLE", "true"
+
+    finalizedBy 'cleanTest'
+}

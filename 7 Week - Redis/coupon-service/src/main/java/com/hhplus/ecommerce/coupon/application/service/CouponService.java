@@ -30,7 +30,7 @@ public class CouponService implements CouponUseCase {
 
     @Override
     @Transactional
-    @DistributedLock(key = "lock:coupon:event:#={eventId}:user:#={userId}", waitTime = 3, leaseTime = 2)
+    @DistributedLock(key = "lock:coupon:event:#={p1}:user:#={p0}", waitTime = 3, leaseTime = 2)
     public Coupon issueCoupon(Long userId, Long eventId) {
         CouponEvent event = couponRepository.findEventById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.COUPON_SOLD_OUT));

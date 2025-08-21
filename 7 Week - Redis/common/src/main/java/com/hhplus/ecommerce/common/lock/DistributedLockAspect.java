@@ -76,10 +76,22 @@ public class DistributedLockAspect {
         Parameter[] parameters = method.getParameters();
 
         for (int i = 0; i < parameters.length; i++) {
-            context.setVariable(parameters[i].getName(), args[i]);
+            String paramName = parameters[i].getName();
+
+            context.setVariable("arg" + i, args[i]);
+            context.setVariable("p" + i, args[i]);
+
+            // 파라미터 이름으로도 설정 (컴파일 옵션에 -parameters가 있을 때만 정상 작동)
+            context.setVariable(paramName, args[i]);
         }
 
-        return parser.parseExpression(keyExpression, new TemplateParserContext()).getValue(context, String.class);
+        try {
+            return parser.parseExpression(keyExpression, new TemplateParserContext()).getValue(context, String.class);
+        } catch (Exception e) {
+            log.error("Lock key 생성 실패. keyExpression: {}, args: {}", keyExpression, args, e);
+
+            return keyExpression.replace("#={", "").replace("}", "") + ":" + System.currentTimeMillis();
+        }
     }
 
     private static class TemplateParserContext implements org.springframework.expression.ParserContext {

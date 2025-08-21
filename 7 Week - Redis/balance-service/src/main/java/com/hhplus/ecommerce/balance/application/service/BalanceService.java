@@ -27,7 +27,7 @@ public class BalanceService implements BalanceUseCase {
 
     @Override
     @Transactional
-    @DistributedLock(key = "lock:balance:user:#={userId}", waitTime = 5, leaseTime = 3)
+    @DistributedLock(key = "lock:balance:user:#={p0}", waitTime = 5, leaseTime = 3)
     public BigDecimal chargeBalance(Long userId, BigDecimal amount) {
         Balance balance = balanceRepository.findByUserId(userId)
                 .orElse(new Balance(userId, BigDecimal.ZERO));
@@ -46,7 +46,7 @@ public class BalanceService implements BalanceUseCase {
 
     @Override
     @Transactional
-    @DistributedLock(key = "lock:balance:user:#={userId}", waitTime = 5, leaseTime = 3)
+    @DistributedLock(key = "lock:balance:user:#={p0}", waitTime = 5, leaseTime = 3)
     public void deductBalance(Long userId, BigDecimal amount) {
         Balance balance = balanceRepository.findByUserId(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BALANCE_NOT_FOUND));

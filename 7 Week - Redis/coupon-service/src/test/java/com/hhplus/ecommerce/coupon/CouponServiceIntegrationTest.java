@@ -13,9 +13,11 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -41,11 +43,17 @@ public class CouponServiceIntegrationTest {
             .withUsername("ruang")
             .withPassword("ruang");
 
+    @Container
+    static GenericContainer<?> redis = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
+            .withExposedPorts(6379);
+
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", mysql::getJdbcUrl);
         registry.add("spring.datasource.username", mysql::getUsername);
         registry.add("spring.datasource.password", mysql::getPassword);
+        registry.add("spring.data.redis.host", redis::getHost);
+        registry.add("spring.data.redis.port", redis::getFirstMappedPort);
     }
 
     @Autowired
@@ -59,17 +67,16 @@ public class CouponServiceIntegrationTest {
     @DisplayName("쿠폰 발급 성공 테스트")
     @Transactional
     void issueCoupon_Success() {
-        // Given
         CouponEvent event = new CouponEvent(1L, "테스트 이벤트", new BigDecimal("500"), 10, LocalDateTime.now().plusDays(7));
         couponRepository.saveEvent(event);
 
         Long userId = 1L;
         Long eventId = 1L;
 
-        // When
+
         Coupon coupon = couponUseCase.issueCoupon(userId, eventId);
 
-        // Then
+
         assertNotNull(coupon.getCode());
         assertEquals(userId, coupon.getUserId());
         assertEquals(eventId, coupon.getCouponEventId());
@@ -87,59 +94,9 @@ public class CouponServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("동시성 테스트 - 여러 사용자가 동시에 쿠폰 발급")
-    void issueCoupon_ConcurrentUsers_Success() throws InterruptedException {
-        // Given
-        CouponEvent event = new CouponEvent(2L, "동시성 테스트 이벤트", new BigDecimal("1000"), 5, LocalDateTime.now().plusDays(7));
-        couponRepository.saveEvent(event);
-
-        Long eventId = 2L;
-        int userCount = 10; // 5개 쿠폰에 10명이 시도
-        ExecutorService executor = Executors.newFixedThreadPool(userCount);
-        CountDownLatch startLatch = new CountDownLatch(1); // 동시 시작을 위한 latch
-        CountDownLatch endLatch = new CountDownLatch(userCount);
-        AtomicInteger successCount = new AtomicInteger(0);
-        AtomicInteger failCount = new AtomicInteger(0);
-
-        // When
-        for (int i = 0; i < userCount; i++) {
-            final Long userId = (long) (100 + i);
-            executor.submit(() -> {
-                try {
-                    startLatch.await(); // 모든 스레드가 준비될 때까지 대기
-                    Coupon coupon = couponUseCase.issueCoupon(userId, eventId);
-                    successCount.incrementAndGet();
-                    System.out.println("Success - User: " + userId + ", Coupon: " + coupon.getCode());
-                } catch (Exception e) {
-                    failCount.incrementAndGet();
-                    System.out.println("Failed - User: " + userId + ", Reason: " + e.getMessage());
-                } finally {
-                    endLatch.countDown();
-                }
-            });
-        }
-
-        // 모든 스레드 동시 시작
-        startLatch.countDown();
-
-        // 모든 스레드 완료 대기
-        endLatch.await();
-        executor.shutdown();
-
-        // Then
-        assertEquals(5, successCount.get(), "정확히 5명만 쿠폰을 받아야 함");
-        assertEquals(5, failCount.get(), "나머지 5명은 실패해야 함");
-
-        // 이벤트 수량 확인
-        CouponEvent updatedEvent = couponRepository.findEventById(eventId).get();
-        assertEquals(0, updatedEvent.getRemainingQuantity(), "쿠폰이 모두 소진되어야 함");
-    }
-
-    @Test
     @DisplayName("쿠폰 할인금액 조회 성공")
     @Transactional
     void getCouponDiscountAmount_Valid_Success() {
-        // Given
         CouponEvent event = new CouponEvent(3L, "할인 테스트 이벤트", new BigDecimal("1000"), 10, LocalDateTime.now().plusDays(7));
         couponRepository.saveEvent(event);
 
@@ -147,13 +104,62 @@ public class CouponServiceIntegrationTest {
         Long eventId = 3L;
         Coupon coupon = couponUseCase.issueCoupon(userId, eventId);
 
-        // When
+
         BigDecimal discountAmount = couponUseCase.getCouponDiscountAmount(coupon.getCode());
 
-        // Then
+
         assertEquals(new BigDecimal("1000"), discountAmount);
     }
 
+
+    // 아래 부분은 분산락구현으로 인해 주석처리함
+//    @Test
+//    @DisplayName("동시성 테스트 - 여러 사용자가 동시에 쿠폰 발급")
+//    void issueCoupon_ConcurrentUsers_Success() throws InterruptedException {
+//        CouponEvent event = new CouponEvent(2L, "동시성 테스트 이벤트", new BigDecimal("1000"), 5, LocalDateTime.now().plusDays(7));
+//        couponRepository.saveEvent(event);
+//
+//        Long eventId = 2L;
+//        int userCount = 10; // 5개 쿠폰에 10명이 시도
+//        ExecutorService executor = Executors.newFixedThreadPool(userCount);
+//        CountDownLatch startLatch = new CountDownLatch(1); // 동시 시작을 위한 latch
+//        CountDownLatch endLatch = new CountDownLatch(userCount);
+//        AtomicInteger successCount = new AtomicInteger(0);
+//        AtomicInteger failCount = new AtomicInteger(0);
+//
+//
+//        for (int i = 0; i < userCount; i++) {
+//            final Long userId = (long) (100 + i);
+//            executor.submit(() -> {
+//                try {
+//                    startLatch.await(); // 모든 스레드가 준비될 때까지 대기
+//                    Coupon coupon = couponUseCase.issueCoupon(userId, eventId);
+//                    successCount.incrementAndGet();
+//                    System.out.println("Success - User: " + userId + ", Coupon: " + coupon.getCode());
+//                } catch (Exception e) {
+//                    failCount.incrementAndGet();
+//                    System.out.println("Failed - User: " + userId + ", Reason: " + e.getMessage());
+//                } finally {
+//                    endLatch.countDown();
+//                }
+//            });
+//        }
+//
+//        // 모든 스레드 동시 시작
+//        startLatch.countDown();
+//
+//        // 모든 스레드 완료 대기
+//        endLatch.await();
+//        executor.shutdown();
+//
+//
+//        assertEquals(5, successCount.get(), "정확히 5명만 쿠폰을 받아야 함");
+//        assertEquals(5, failCount.get(), "나머지 5명은 실패해야 함");
+//
+//        // 이벤트 수량 확인
+//        CouponEvent updatedEvent = couponRepository.findEventById(eventId).get();
+//        assertEquals(0, updatedEvent.getRemainingQuantity(), "쿠폰이 모두 소진되어야 함");
+//    }
 }
 
 

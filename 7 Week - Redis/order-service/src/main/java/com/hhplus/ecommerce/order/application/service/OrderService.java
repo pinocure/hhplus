@@ -87,7 +87,7 @@ public class OrderService implements OrderUseCase {
 
     @Override
     @Transactional
-    @DistributedLock(key = "lock:order:pay:user:#={orderId}", waitTime = 5, leaseTime = 5)
+    @DistributedLock(key = "lock:order:pay:user:#={p0}", waitTime = 5, leaseTime = 5)
     public Order payOrder(Long orderId) {
 
         // 재고 차감 내역 추적

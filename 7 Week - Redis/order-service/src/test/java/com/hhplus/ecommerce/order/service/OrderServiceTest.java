@@ -86,7 +86,7 @@ public class OrderServiceTest {
 
         when(productPort.getProduct(1L)).thenReturn(productDto);
 
-        assertThrows(Exception.class, () -> orderService.createOrder(1L, List.of(1L), List.of(2), List.of("CODE")));
+        assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(1L, List.of(1L), List.of(2), List.of("CODE")));
     }
 
     @Test
@@ -98,7 +98,7 @@ public class OrderServiceTest {
         order.setTotalPrice(BigDecimal.valueOf(1000));
 
         // 비관적 락 사용
-        when(orderRepository.findByIdWithPessimisticLock(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         doNothing().when(balancePort).deductBalance(anyLong(), any(BigDecimal.class));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
 
@@ -117,12 +117,11 @@ public class OrderServiceTest {
         order.setTotalPrice(BigDecimal.valueOf(1000));
 
         // 비관적 락 사용
-        when(orderRepository.findByIdWithPessimisticLock(1L)).thenReturn(Optional.of(order));
-        doThrow(new RuntimeException("잔액 부족")).when(balancePort).deductBalance(anyLong(), any(BigDecimal.class));
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        doThrow(new RuntimeException("잔액 부족")).when(balancePort).deductBalance(anyLong(), any(BigDecimal.class));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
 
-        assertThrows(Exception.class, () -> orderService.payOrder(1L));
+        assertThrows(BusinessException.class, () -> orderService.payOrder(1L));
         assertEquals("FAILED", order.getStatus());
     }
 
@@ -134,9 +133,7 @@ public class OrderServiceTest {
         order.setStatus("PENDING");
 
         // 비관적 락 사용
-        when(orderRepository.findByIdWithPessimisticLock(1L)).thenReturn(Optional.of(order));
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(orderRepository.save(any(Order.class))).thenReturn(order);
 
         BusinessException exception = assertThrows(BusinessException.class, () -> orderService.payOrder(1L));
 

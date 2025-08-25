@@ -32,7 +32,9 @@ public enum ErrorCode {
     // 주문 관련
     ORDER_NOT_FOUND("O001", "주문 정보를 찾을 수 없습니다."),
     ORDER_INVALID_STATUS("O002", "주문 상태가 올바르지 않습니다."),
-    ORDER_FAIL("O003", "주문에 실패했습니다.");
+    ORDER_FAIL("O003", "주문에 실패했습니다."),
+    ORDER_EVENT_ERROR("0004", "이벤트 관련 에러가 발생했습니다."),
+    ORDER_EVENT_FAIL("0005", "이벤트 처리 중 실패하였습니다.");
 
     private final String code;
     private final String message;

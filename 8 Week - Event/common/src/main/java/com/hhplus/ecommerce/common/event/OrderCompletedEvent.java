@@ -34,6 +34,16 @@ public class OrderCompletedEvent {
         return orderedAt;
     }
 
+    @Override
+    public String toString() {
+        return "OrderCompletedEvent{" +
+                "orderId=" + orderId +
+                ", userId=" + userId +
+                ", totalPrice=" + totalPrice +
+                ", orderedAt=" + orderedAt +
+                '}';
+    }
+
 }
 
 

@@ -18,7 +18,10 @@ import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.redis.redisson.config=",
+        "spring.autoconfigure.exclude=org.redisson.spring.starter.RedissonAutoConfigurationV2"
+})
 @Testcontainers
 public class OrderServiceIntegrationTest {
 
@@ -32,13 +35,19 @@ public class OrderServiceIntegrationTest {
     static GenericContainer<?> redis = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
             .withExposedPorts(6379);
 
+
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", mysql::getJdbcUrl);
         registry.add("spring.datasource.username", mysql::getUsername);
         registry.add("spring.datasource.password", mysql::getPassword);
-        registry.add("spring.data.redis.host", redis::getHost);
-        registry.add("spring.data.redis.port", redis::getFirstMappedPort);
+
+
+        registry.add("spring.redis.host", redis::getHost);
+        registry.add("spring.redis.port", redis::getFirstMappedPort);
+
+        registry.add("spring.redisson.address", () -> "redis://" + redis.getHost() + ":" + redis.getFirstMappedPort());
+
     }
 
     @Autowired
@@ -73,14 +82,4 @@ public class OrderServiceIntegrationTest {
         assertTrue(found.isPresent());
         assertEquals(1L, found.get().getUserId());
     }
-
 }
-
-
-
-
-
-
-
-
-

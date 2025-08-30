@@ -27,15 +27,15 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Order Service 외부 협력 통합 테스트
- */
-
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.redis.redisson.config=",
+        "spring.autoconfigure.exclude=org.redisson.spring.starter.RedissonAutoConfigurationV2"
+})
 @Testcontainers
 @Transactional
 public class OrderServiceExternalIntegrationTest {
@@ -55,8 +55,12 @@ public class OrderServiceExternalIntegrationTest {
         registry.add("spring.datasource.url", mysql::getJdbcUrl);
         registry.add("spring.datasource.username", mysql::getUsername);
         registry.add("spring.datasource.password", mysql::getPassword);
-        registry.add("spring.data.redis.host", redis::getHost);
-        registry.add("spring.data.redis.port", redis::getFirstMappedPort);
+
+
+        registry.add("spring.redis.host", redis::getHost);
+        registry.add("spring.redis.port", redis::getFirstMappedPort);
+
+        registry.add("spring.redisson.address", () -> "redis://" + redis.getHost() + ":" + redis.getFirstMappedPort());
     }
 
     @Autowired

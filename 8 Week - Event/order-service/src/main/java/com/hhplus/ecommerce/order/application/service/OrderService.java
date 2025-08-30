@@ -1,28 +1,26 @@
 package com.hhplus.ecommerce.order.application.service;
 
+import com.hhplus.ecommerce.common.event.OrderCompletedEvent;
 import com.hhplus.ecommerce.common.exception.BusinessException;
 import com.hhplus.ecommerce.common.exception.ErrorCode;
 import com.hhplus.ecommerce.common.lock.DistributedLock;
 import com.hhplus.ecommerce.order.application.port.in.OrderUseCase;
+import com.hhplus.ecommerce.order.application.port.out.OrderRepository;
 import com.hhplus.ecommerce.order.application.port.out.feign.BalancePort;
 import com.hhplus.ecommerce.order.application.port.out.feign.CouponPort;
-import com.hhplus.ecommerce.order.application.port.out.OrderRepository;
 import com.hhplus.ecommerce.order.application.port.out.feign.ProductPort;
 import com.hhplus.ecommerce.order.domain.Order;
 import com.hhplus.ecommerce.order.domain.OrderCoupon;
 import com.hhplus.ecommerce.order.domain.OrderItem;
 import com.hhplus.ecommerce.order.domain.OrderProduct;
-import jakarta.persistence.PessimisticLockException;
-import jakarta.persistence.LockTimeoutException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 
 @Service
@@ -32,12 +30,18 @@ public class OrderService implements OrderUseCase {
     private final ProductPort productPort;
     private final CouponPort couponPort;
     private final BalancePort balancePort;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public OrderService(OrderRepository orderRepository, ProductPort productPort, CouponPort couponPort, BalancePort balancePort) {
+    public OrderService(OrderRepository orderRepository,
+                        ProductPort productPort,
+                        CouponPort couponPort,
+                        BalancePort balancePort,
+                        ApplicationEventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
         this.productPort = productPort;
         this.couponPort = couponPort;
         this.balancePort = balancePort;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -71,7 +75,6 @@ public class OrderService implements OrderUseCase {
             items.add(orderItem);
         });
 
-        // 쿠폰 처리 시
         List<OrderCoupon> coupons = new ArrayList<>();
         couponCodes.forEach(code -> {
             couponPort.validateCoupon(code);
@@ -90,7 +93,6 @@ public class OrderService implements OrderUseCase {
     @DistributedLock(key = "lock:order:pay:user:#={p0}", waitTime = 5, leaseTime = 5)
     public Order payOrder(Long orderId) {
 
-        // 재고 차감 내역 추적
         List<StockDeduction> stockDeductions = new ArrayList<>();
 
         try {
@@ -117,7 +119,16 @@ public class OrderService implements OrderUseCase {
             order.getCoupons().forEach(coupon -> coupon.setUsed(true));
 
             order.pay();
-            return orderRepository.save(order);
+            Order savedOrder = orderRepository.save(order);
+
+            eventPublisher.publishEvent(new OrderCompletedEvent(
+                    savedOrder.getId(),
+                    savedOrder.getUserId(),
+                    savedOrder.getTotalPrice(),
+                    LocalDateTime.now()
+            ));
+
+            return savedOrder;
 
         } catch (BusinessException e) {
             throw e;

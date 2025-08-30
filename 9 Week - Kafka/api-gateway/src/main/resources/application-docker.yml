@@ -1,0 +1,57 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: balance-service
+          uri: http://balance-service:8081
+          predicates:
+            - Path=/balances/**
+
+        - id: coupon-service
+          uri: http://coupon-service:8082
+          predicates:
+            - Path=/coupons/**
+
+        - id: order-service
+          uri: http://order-service:8080
+          predicates:
+            - Path=/orders/**
+
+        - id: product-service
+          uri: http://product-service:8083
+          predicates:
+            - Path=/products/**
+
+        - id: user-service
+          uri: http://user-service:8084
+          predicates:
+            - Path=/users/**
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.hhplus.ecommerce: INFO
+    org.springframework.cloud.gateway: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

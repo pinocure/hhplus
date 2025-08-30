@@ -1,0 +1,34 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: coupon-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://mysql-coupon:3306/coupon_db}
+    username: ${SPRING_DATASOURCE_USERNAME:ruang}
+    password: ${SPRING_DATASOURCE_PASSWORD:ruang}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      max-lifetime: 250000
+      connection-timeout: 5000
+      maximum-pool-size: 5
+      minimum-idle: 1
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:redis}
+      port: ${SPRING_REDIS_PORT:6379}
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5

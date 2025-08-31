@@ -30,8 +30,8 @@ public class CouponService implements CouponUseCase {
 
     private static final String ISSUE_COUPON_SCRIPT =
             "local key = KEYS[1]" +
-            "local userId = KEYS[2]" +
-            "local maxCount = tonumber(ARGV[1])" +
+            "local userId = ARGV[1]" +
+            "local maxCount = tonumber(ARGV[2])" +
             "local currentCount = redis.call('scard', key)" +
             "if currentCount >= maxCount then" +
             "    return -1" +
@@ -83,12 +83,13 @@ public class CouponService implements CouponUseCase {
 
             Long result = redisTemplate.execute(
                     redisScript,
-                    Arrays.asList(userSetKey, userId.toString()),
+                    Arrays.asList(userSetKey),
+                    userId.toString(),
                     maxCount.toString()
             );
 
             if (result == null || result == -1) {
-                return "SOLD OUT";
+                return "SOLD_OUT";
             } else if (result == 0) {
                 return "ALREADY_ISSUED";
             } else {
@@ -97,7 +98,6 @@ public class CouponService implements CouponUseCase {
                         userId.toString()
                 );
 
-                redisTemplate.expire(eventKey, 7, TimeUnit.DAYS);
                 redisTemplate.expire(userSetKey, 7, TimeUnit.DAYS);
 
                 return "SUCCESS";

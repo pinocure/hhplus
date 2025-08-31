@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest
 @Testcontainers
 @Import(CouponRepositoryAdapter.class)
+@ActiveProfiles("test-no-redis")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class CouponRepositoryAdapterTest {
 
@@ -37,6 +39,7 @@ public class CouponRepositoryAdapterTest {
         registry.add("spring.datasource.url", mysql::getJdbcUrl);
         registry.add("spring.datasource.username", mysql::getUsername);
         registry.add("spring.datasource.password", mysql::getPassword);
+        registry.add("app.redis.enabled", () -> "false");
     }
 
     @Autowired
@@ -46,9 +49,10 @@ public class CouponRepositoryAdapterTest {
     @Transactional
     void save_and_find_coupon() {
         Coupon coupon = new Coupon("CODE1", 1L, 1L, new BigDecimal("500"), LocalDateTime.now().plusDays(1));
-        repository.save(coupon);
 
+        repository.save(coupon);
         Optional<Coupon> found = repository.findByCode("CODE1");
+
         assertTrue(found.isPresent());
         assertEquals("CODE1", found.get().getCode());
     }
@@ -64,6 +68,7 @@ public class CouponRepositoryAdapterTest {
     @Transactional
     void save_and_find_event() {
         CouponEvent event = new CouponEvent(1L, "Event1", new BigDecimal("500"), 10, LocalDateTime.now().plusDays(7));
+
         CouponEvent saved = repository.saveEvent(event);
 
         assertNotNull(saved);
@@ -84,6 +89,7 @@ public class CouponRepositoryAdapterTest {
         repository.save(coupon);
 
         Optional<Coupon> found = repository.findByUserIdAndEventId(1L, 1L);
+
         assertTrue(found.isPresent());
         assertEquals("CODE1", found.get().getCode());
     }
@@ -91,8 +97,8 @@ public class CouponRepositoryAdapterTest {
     @Test
     void find_default_event() {
         CouponEvent defaultEvent = new CouponEvent(1L, "Event1", new BigDecimal("500"), 10, LocalDateTime.now().plusDays(7));
-        CouponEvent saved = repository.saveEvent(defaultEvent);
 
+        CouponEvent saved = repository.saveEvent(defaultEvent);
         Optional<CouponEvent> found = repository.findEventById(saved.getId());
 
         assertTrue(found.isPresent());

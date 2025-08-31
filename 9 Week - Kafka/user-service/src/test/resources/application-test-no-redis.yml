@@ -23,6 +23,12 @@ spring:
         connection:
           handling_mode: DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION
 
+  # Disable Redis auto-configuration entirely
+  autoconfigure:
+    exclude:
+      - org.redisson.spring.starter.RedissonAutoConfigurationV2
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+
 logging:
   level:
     com.zaxxer.hikari: DEBUG

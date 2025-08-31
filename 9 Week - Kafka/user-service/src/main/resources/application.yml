@@ -1,6 +1,10 @@
 server:
   port: 8084
 
+app:
+  redis:
+    enabled: false
+
 spring:
   application:
     name: user-service
@@ -21,23 +25,3 @@ spring:
     properties:
       hibernate:
         format_sql: true
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: always
-
-
-
-# 로깅 UTF-8 설정
-logging:
-  charset:
-    console: UTF-8
-    file: UTF-8
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

@@ -18,7 +18,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import java.math.BigDecimal;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 @Testcontainers
@@ -49,6 +49,7 @@ public class BalanceServiceIntegrationTest {
         registry.add("spring.data.redis.host", redis::getHost);
         registry.add("spring.data.redis.port", redis::getFirstMappedPort);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create");
+        registry.add("app.redis.enabled", () -> "true");
     }
 
     @Autowired

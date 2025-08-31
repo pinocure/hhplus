@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-slim AS builder
+FROM eclipse-temurin:17-jdk AS builder
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ COPY gradle gradle/
 COPY build.gradle .
 COPY settings.gradle .
 
-COPY gateway gateway/
+COPY api-gateway api-gateway/
 
 RUN chmod +x gradlew
 
@@ -19,7 +19,7 @@ RUN ./gradlew :api-gateway:dependencies --no-daemon
 RUN ./gradlew :api-gateway:bootJar --no-daemon
 
 
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre
 
 RUN groupadd -r ruang && useradd -r -g ruang ruang
 
@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY --from=builder /app/gateway/build/libs/*.jar app.jar
+COPY --from=builder /app/api-gateway/build/libs/*.jar app.jar
 
 RUN chown -R ruang:ruang /app
 

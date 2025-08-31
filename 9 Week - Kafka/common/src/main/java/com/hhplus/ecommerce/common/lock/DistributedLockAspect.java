@@ -10,6 +10,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.core.annotation.Order;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -24,6 +25,7 @@ import java.lang.reflect.Parameter;
 @Component
 @Order(1)
 @RequiredArgsConstructor
+@ConditionalOnBean(RedissonClient.class)
 public class DistributedLockAspect {
 
     private final RedissonClient redissonClient;

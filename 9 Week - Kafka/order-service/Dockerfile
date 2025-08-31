@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-slim AS builder
+FROM eclipse-temurin:17-jdk AS builder
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ RUN ./gradlew :order-service:dependencies --no-daemon
 RUN ./gradlew :order-service:bootJar --no-daemon
 
 
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre
 
 RUN groupadd -r ruang && useradd -r -g ruang ruang
 

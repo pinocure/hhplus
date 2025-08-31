@@ -5,6 +5,7 @@ import com.hhplus.ecommerce.product.domain.Product;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Testcontainers
+@ActiveProfiles("test")
 public class ProductServiceIntegrationTest {
 
     @Container
@@ -38,6 +40,8 @@ public class ProductServiceIntegrationTest {
         registry.add("spring.datasource.password", mysql::getPassword);
         registry.add("spring.data.redis.host", redis::getHost);
         registry.add("spring.data.redis.port", redis::getFirstMappedPort);
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create");
+        registry.add("app.redis.enabled", () -> "true");
     }
 
     @Autowired
@@ -54,6 +58,7 @@ public class ProductServiceIntegrationTest {
     void getPopularProductsIntegrationTest() {
         List<Product> popular = productUseCase.getPopularProducts(3, 5);
 
+        assertNotNull(popular);
         assertTrue(popular.isEmpty());
     }
 

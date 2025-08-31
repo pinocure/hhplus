@@ -1,6 +1,10 @@
 server:
   port: 8083
 
+app:
+  redis:
+    enabled: true
+
 spring:
   application:
     name: product-service
@@ -33,22 +37,3 @@ spring:
           max-idle: 5
           min-idle: 2
 
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: always
-
-
-# 로깅 UTF-8 설정
-logging:
-  charset:
-    console: UTF-8
-    file: UTF-8
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

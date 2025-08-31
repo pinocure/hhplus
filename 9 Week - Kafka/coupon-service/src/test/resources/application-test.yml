@@ -1,3 +1,7 @@
+app:
+  redis:
+    enabled: true
+
 spring:
   datasource:
     hikari:

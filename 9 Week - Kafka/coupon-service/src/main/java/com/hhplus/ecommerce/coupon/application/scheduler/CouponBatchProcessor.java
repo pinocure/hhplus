@@ -3,6 +3,7 @@ package com.hhplus.ecommerce.coupon.application.scheduler;
 import com.hhplus.ecommerce.coupon.application.service.CouponService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -12,6 +13,7 @@ import java.util.Set;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnBean(RedisTemplate.class)
 public class CouponBatchProcessor {
 
     private final CouponService couponService;

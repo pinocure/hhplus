@@ -1,3 +1,7 @@
+app:
+  redis:
+    enabled: false
+
 spring:
   datasource:
     hikari:
@@ -27,8 +31,40 @@ spring:
           max-idle: 3
           min-idle: 1
 
+# 테스트에서 외부 서비스 호출하지 않도록 Mock 사용
+services:
+  balance:
+    url: http://localhost:8081
+  coupon:
+    url: http://localhost:8082
+  product:
+    url: http://localhost:8083
+  user:
+    url: http://localhost:8084
+
 logging:
   level:
     com.zaxxer.hikari: DEBUG
     org.hibernate.SQL: DEBUG
     org.springframework.transaction: DEBUG
+    com.hhplus.ecommerce.order: INFO
+    com.hhplus.ecommerce.common: INFO
+
+---
+# Redis와 함께 분산락을 테스트하고 싶을 때 사용
+spring:
+  config:
+    activate:
+      on-profile: test-with-redis
+
+  data:
+    redis:
+      lettuce:
+        pool:
+          max-active: 5
+          max-idle: 3
+          min-idle: 1
+
+app:
+  redis:
+    enabled: true

@@ -3,11 +3,9 @@ package com.hhplus.ecommerce.balance;
 import com.hhplus.ecommerce.balance.application.port.in.BalanceUseCase;
 import com.hhplus.ecommerce.balance.application.port.out.BalanceRepository;
 import com.hhplus.ecommerce.balance.domain.Balance;
-import com.hhplus.ecommerce.common.lock.DistributedLock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
@@ -24,11 +22,9 @@ import java.math.BigDecimal;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 @Testcontainers
@@ -59,6 +55,7 @@ public class DistributedLockIntegrationTest {
         registry.add("spring.data.redis.host", redis::getHost);
         registry.add("spring.data.redis.port", redis::getFirstMappedPort);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create");
+        registry.add("app.redis.enabled", () -> "true");
     }
 
     @Autowired
@@ -119,65 +116,6 @@ public class DistributedLockIntegrationTest {
 
         assertEquals(threadCount, successCount.get());
         assertEquals(0, failCount.get());
-    }
-
-    @Test
-    @DisplayName("분산락 타임아웃 테스트")
-    void testDistributedLockTimeout() throws InterruptedException {
-        Long userId = 3L;
-        Balance balance = new Balance(userId, new BigDecimal("1000"));
-        balanceRepository.save(balance);
-
-        CountDownLatch startLatch = new CountDownLatch(1);
-        CountDownLatch endLatch = new CountDownLatch(2);
-        AtomicInteger timeoutCount = new AtomicInteger(0);
-        AtomicInteger successCount = new AtomicInteger(0);
-
-        // Thread1: DB 비관적 락으로 오래 보유
-        Thread thread1 = new Thread(() -> {
-            try {
-                startLatch.await();
-                // 비관적 락을 사용하여 실제로 락을 오래 보유
-                balanceRepository.findByUserIdWithLock(userId); // 비관적 락 획득
-                Thread.sleep(1000); // DB 락 보유
-
-                balanceUseCase.chargeBalance(userId, new BigDecimal("100"));
-                successCount.incrementAndGet();
-                System.out.println("Thread1 성공");
-            } catch (Exception e) {
-                System.err.println("Thread1 실패: " + e.getMessage());
-            } finally {
-                endLatch.countDown();
-            }
-        });
-
-        // Thread2: 분산락 타임아웃 시도
-        Thread thread2 = new Thread(() -> {
-            try {
-                startLatch.await();
-                Thread.sleep(50); // Thread1이 먼저 시작하도록
-
-                balanceUseCase.chargeBalance(userId, new BigDecimal("200"));
-                successCount.incrementAndGet();
-                System.out.println("Thread2 성공");
-            } catch (Exception e) {
-                System.err.println("Thread2 실패: " + e.getMessage());
-                if (e.getMessage() != null && e.getMessage().contains("잠시 후 다시 시도")) {
-                    timeoutCount.incrementAndGet();
-                }
-            } finally {
-                endLatch.countDown();
-            }
-        });
-
-        thread1.start();
-        thread2.start();
-        startLatch.countDown();
-
-        endLatch.await(15, TimeUnit.SECONDS); // 타임아웃 방지
-
-        System.out.println("성공 횟수: " + successCount.get());
-        System.out.println("타임아웃 횟수: " + timeoutCount.get());
     }
 
 }

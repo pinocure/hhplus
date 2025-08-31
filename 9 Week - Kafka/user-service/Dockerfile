@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-slim AS builder
+FROM eclipse-temurin:17-jdk AS builder
 
 WORKDIR /app
 
@@ -9,19 +9,19 @@ COPY build.gradle .
 COPY settings.gradle .
 
 COPY common common/
-
 COPY user-service user-service/
 
 RUN chmod +x gradlew
 
 # 의존성 다운로드
+RUN ./gradlew :common:build -x test --no-daemon
 RUN ./gradlew :user-service:dependencies --no-daemon
 
 # 애플리케이션 빌드
 RUN ./gradlew :user-service:bootJar --no-daemon
 
 
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre
 
 RUN groupadd -r ruang && useradd -r -g ruang ruang
 

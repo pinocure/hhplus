@@ -7,7 +7,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import java.util.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Repository
@@ -54,6 +57,12 @@ public class ProductRepositoryAdapter implements ProductRepository {
     public Optional<Product> findByIdWithLock(Long productId) {
         return productJpaRepository.findByIdWithLock(productId)
                 .map(ProductJpaEntity::toDomain);
+    }
+
+    @Override
+    public void updateSalesStatistics(LocalDate salesDate, BigDecimal totalAmount) {
+        System.out.println("판매 통계 업데이트: date=" + salesDate +
+                ", amount=" + totalAmount);
     }
 
 }

@@ -3,6 +3,7 @@ package com.hhplus.ecommerce.coupon.application.port.out;
 import com.hhplus.ecommerce.coupon.domain.Coupon;
 import com.hhplus.ecommerce.coupon.domain.CouponEvent;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface CouponRepository {
@@ -14,5 +15,7 @@ public interface CouponRepository {
     CouponEvent saveEvent(CouponEvent event);
 
     Optional<Coupon> findByUserIdAndEventId(Long userId, Long eventId);
+
+    List<Coupon> findUnusedCouponsByUserId(Long userId);
 
 }

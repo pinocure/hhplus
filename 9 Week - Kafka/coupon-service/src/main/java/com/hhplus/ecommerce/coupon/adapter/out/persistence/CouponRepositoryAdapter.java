@@ -7,6 +7,7 @@ import com.hhplus.ecommerce.coupon.domain.Coupon;
 import com.hhplus.ecommerce.coupon.domain.CouponEvent;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -52,6 +53,12 @@ public class CouponRepositoryAdapter implements CouponRepository {
     public Optional<Coupon> findByUserIdAndEventId(Long userId, Long eventId) {
         return couponJpaRepository.findByUserIdAndCouponEventId(userId, eventId)
                 .map(CouponJpaEntity::toDomain);
+    }
+
+    @Override
+    public List<Coupon> findUnusedCouponsByUserId(Long userId) {
+        System.out.println("미사용 쿠폰 조회: userId=" + userId);
+        return List.of(); // 임시로 빈 리스트
     }
 
 }

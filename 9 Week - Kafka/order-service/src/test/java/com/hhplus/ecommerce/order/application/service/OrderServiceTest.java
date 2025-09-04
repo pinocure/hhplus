@@ -47,7 +47,7 @@ public class OrderServiceTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        orderService = new OrderService(orderRepository, productPort, couponPort, balancePort, eventPublisher);
+        orderService = new OrderService(orderRepository, productPort, couponPort, balancePort);
     }
 
     @Test

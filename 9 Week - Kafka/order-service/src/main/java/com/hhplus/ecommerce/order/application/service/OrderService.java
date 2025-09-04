@@ -1,19 +1,18 @@
 package com.hhplus.ecommerce.order.application.service;
 
-import com.hhplus.ecommerce.common.event.OrderCompletedEvent;
+import com.hhplus.ecommerce.common.event.*;
 import com.hhplus.ecommerce.common.exception.BusinessException;
 import com.hhplus.ecommerce.common.exception.ErrorCode;
-import com.hhplus.ecommerce.common.lock.DistributedLock;
 import com.hhplus.ecommerce.order.application.port.in.OrderUseCase;
 import com.hhplus.ecommerce.order.application.port.out.OrderRepository;
-import com.hhplus.ecommerce.order.application.port.out.feign.BalancePort;
-import com.hhplus.ecommerce.order.application.port.out.feign.CouponPort;
-import com.hhplus.ecommerce.order.application.port.out.feign.ProductPort;
 import com.hhplus.ecommerce.order.domain.Order;
 import com.hhplus.ecommerce.order.domain.OrderCoupon;
 import com.hhplus.ecommerce.order.domain.OrderItem;
 import com.hhplus.ecommerce.order.domain.OrderProduct;
-import org.springframework.context.ApplicationEventPublisher;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,28 +20,19 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.IntStream;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class OrderService implements OrderUseCase {
 
     private final OrderRepository orderRepository;
-    private final ProductPort productPort;
-    private final CouponPort couponPort;
-    private final BalancePort balancePort;
-    private final ApplicationEventPublisher eventPublisher;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public OrderService(OrderRepository orderRepository,
-                        ProductPort productPort,
-                        CouponPort couponPort,
-                        BalancePort balancePort,
-                        ApplicationEventPublisher eventPublisher) {
-        this.orderRepository = orderRepository;
-        this.productPort = productPort;
-        this.couponPort = couponPort;
-        this.balancePort = balancePort;
-        this.eventPublisher = eventPublisher;
-    }
+    private final ConcurrentMap<Long, OrderProcessingStatus> processingStatus = new ConcurrentHashMap<>();
 
     @Override
     @Transactional
@@ -53,15 +43,10 @@ public class OrderService implements OrderUseCase {
             Long productId = productIds.get(i);
             Integer quantity = quantities.get(i);
 
-            ProductPort.ProductDto productDto = productPort.getProduct(productId);
-            if (productDto.getStock() < quantity) {
-                throw new IllegalArgumentException(productDto.getName() + "의 재고가 부족합니다.");
-            }
-
             OrderProduct orderProduct = new OrderProduct(
-                    productDto.getId(),
-                    productDto.getName(),
-                    productDto.getPrice()
+                    productId,
+                    "Product-" + productId,
+                    BigDecimal.ZERO
             );
 
             OrderProduct savedOrderProduct = orderRepository.saveOrderProduct(orderProduct);
@@ -69,7 +54,7 @@ public class OrderService implements OrderUseCase {
             OrderItem orderItem = new OrderItem(
                     savedOrderProduct.getId(),
                     quantity,
-                    productDto.getPrice()
+                    BigDecimal.ZERO
             );
 
             items.add(orderItem);
@@ -77,9 +62,7 @@ public class OrderService implements OrderUseCase {
 
         List<OrderCoupon> coupons = new ArrayList<>();
         couponCodes.forEach(code -> {
-            couponPort.validateCoupon(code);
-            BigDecimal discountAmount = couponPort.getCouponDiscountAmount(code);
-            coupons.add(new OrderCoupon(code, discountAmount));
+            coupons.add(new OrderCoupon(code, BigDecimal.ZERO));
         });
 
         Order order = new Order(userId, items, coupons);
@@ -90,87 +73,145 @@ public class OrderService implements OrderUseCase {
 
     @Override
     @Transactional
-    @DistributedLock(key = "lock:order:pay:user:#={p0}", waitTime = 5, leaseTime = 5)
     public Order payOrder(Long orderId) {
 
-        List<StockDeduction> stockDeductions = new ArrayList<>();
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-        try {
-            Order order = orderRepository.findById(orderId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        if (!"CONFIRMED".equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_FAIL);
+        }
 
-            if (!"CONFIRMED".equals(order.getStatus())) {
-                throw new BusinessException(ErrorCode.ORDER_FAIL);
-            }
+        processingStatus.put(orderId, new OrderProcessingStatus());
 
-            BigDecimal totalPrice = order.getTotalPrice();
 
-            balancePort.deductBalance(order.getUserId(), totalPrice);
+        UserValidationRequestEvent userValidation = new UserValidationRequestEvent(
+                orderId, order.getUserId(), LocalDateTime.now()
+        );
+        kafkaTemplate.send("user-validation-request", userValidation);
 
-            for (OrderItem item : order.getItems()) {
-                OrderProduct orderProduct = orderRepository.findOrderProductById(item.getOrderProductId())
-                        .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        OrderPaymentRequestEvent paymentRequest = new OrderPaymentRequestEvent(
+                orderId,
+                order.getUserId(),
+                order.getTotalPrice(),
+                convertToOrderItemInfos(order.getItems()),
+                extractCouponCodes(order.getCoupons()),
+                LocalDateTime.now()
+        );
+        kafkaTemplate.send("order-payment-request", paymentRequest);
 
-                stockDeductions.add(new StockDeduction(orderProduct.getProductId(), item.getQuantity()));
+        order.setStatus("PROCESSING");
+        return orderRepository.save(order);
+    }
 
-                productPort.deductStock(orderProduct.getProductId(), item.getQuantity());
-            }
 
-            order.getCoupons().forEach(coupon -> coupon.setUsed(true));
-
-            order.pay();
-            Order savedOrder = orderRepository.save(order);
-
-            eventPublisher.publishEvent(new OrderCompletedEvent(
-                    savedOrder.getId(),
-                    savedOrder.getUserId(),
-                    savedOrder.getTotalPrice(),
-                    LocalDateTime.now()
-            ));
-
-            return savedOrder;
-
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            rollbackOrder(orderId, stockDeductions);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "결제 실패: " + e.getMessage());
+    // 사용자 검증 완료 처리
+    @KafkaListener(topics = "user-validation-completed", groupId = "order-service-group")
+    @Transactional
+    public void handleUserValidationCompleted(UserValidationCompletedEvent event) {
+        OrderProcessingStatus status = processingStatus.get(event.getOrderId());
+        if (status != null) {
+            status.setUserValidated(event.isSuccess());
+            checkOrderCompletion(event.getOrderId(), status);
         }
     }
 
 
-    private void rollbackOrder(Long orderId, List<StockDeduction> stockDeductions) {
+    // 쿠폰 검증 완료 처리
+    @KafkaListener(topics = "coupon-validation-completed", groupId = "order-service-group")
+    @Transactional
+    public void handleCouponValidationCompleted(CouponValidationCompletedEvent event) {
+        OrderProcessingStatus status = processingStatus.get(event.getOrderId());
+        if (status != null) {
+            status.setCouponValidated(event.isSuccess());
+            status.setTotalDiscount(event.getTotalDiscount());
+            checkOrderCompletion(event.getOrderId(), status);
+        }
+    }
+
+
+    // 결제 완료 처리
+    @KafkaListener(topics = "balance-payment-completed", groupId = "order-service-group")
+    @Transactional
+    public void handlePaymentCompleted(PaymentCompletedEvent event) {
+        OrderProcessingStatus status = processingStatus.get(event.getOrderId());
+        if (status != null) {
+            status.setPaymentCompleted(event.isSuccess());
+            checkOrderCompletion(event.getOrderId(), status);
+        }
+    }
+
+
+    // 재고 부족 처리
+    @KafkaListener(topics = "product-stock-insufficient", groupId = "order-service-group")
+    @Transactional
+    public void handleStockInsufficient(StockInsufficientEvent event) {
+        OrderProcessingStatus status = processingStatus.get(event.getOrderId());
+        if (status != null) {
+            status.setStockSufficient(false);
+            checkOrderCompletion(event.getOrderId(), status);
+        }
+    }
+
+
+    private void checkOrderCompletion(Long orderId, OrderProcessingStatus status) {
+        if (!status.isAllCompleted()) {
+            return;     // 아직 처리 중
+        }
+
         try {
             Order order = orderRepository.findById(orderId).orElse(null);
+            if (order == null) return;
 
-            if (order != null) {
+            if (status.isAllSuccessful()) {
+                order.pay();
+                Order savedOrder = orderRepository.save(order);
+
+                OrderCompletedEvent completedEvent = new OrderCompletedEvent(
+                        savedOrder.getId(),
+                        savedOrder.getUserId(),
+                        savedOrder.getTotalPrice(),
+                        LocalDateTime.now()
+                );
+                kafkaTemplate.send("order-completed", completedEvent);
+
+                log.info("주문 완료: orderId={}", orderId);
+
+            } else {
                 order.fail();
-
-                for (StockDeduction deduction : stockDeductions) {
-                    try {
-                        productPort.restoreStock(deduction.productId, deduction.quantity);
-                    } catch (Exception e) {
-                        System.err.println(e.getMessage());
-                    }
-                }
                 orderRepository.save(order);
+                log.warn("주문 실패: orderId={}, status={}", orderId, status);
             }
-        } catch (Exception e ) {
-            System.err.println(e.getMessage());
+
+        } finally {
+            processingStatus.remove(orderId);
         }
     }
 
 
-    private static class StockDeduction {
-        private final Long productId;
-        private final Integer quantity;
+    // OrderItem → OrderItemInfo 변환
+    private List<OrderItemInfo> convertToOrderItemInfos(List<OrderItem> items) {
+        return items.stream()
+                .map(item -> {
+                    OrderProduct orderProduct = orderRepository.findOrderProductById(item.getOrderProductId())
+                            .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-        public StockDeduction(Long productId, Integer quantity) {
-            this.productId = productId;
-            this.quantity = quantity;
-        }
+                    return new OrderItemInfo(
+                            orderProduct.getProductId(),
+                            orderProduct.getName(),
+                            item.getQuantity(),
+                            item.getUnitPrice()
+                    );
+                })
+                .toList();
     }
 
+    // OrderCoupon에서 쿠폰 코드 추출
+    private List<String> extractCouponCodes(List<OrderCoupon> coupons) {
+        return coupons.stream()
+                .map(OrderCoupon::getCouponCode)
+                .toList();
+    }
 
 }
 

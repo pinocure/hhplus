@@ -1,0 +1,27 @@
+server:
+  port: 8084
+
+app:
+  redis:
+    enabled: false
+
+spring:
+  application:
+    name: user-service
+  profiles:
+    active: local
+  datasource:
+    url: jdbc:mysql://localhost:3306/user_db
+    username: ruang
+    password: ruang
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      max-lifetime: 250000
+      connection-timeout: 5000
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true

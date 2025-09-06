@@ -1,0 +1,36 @@
+app:
+  redis:
+    enabled: false
+
+spring:
+  datasource:
+    hikari:
+      max-lifetime: 30000
+      connection-timeout: 5000
+      validation-timeout: 3000
+      leak-detection-threshold: 2000
+      minimum-idle: 1
+      maximum-pool-size: 5
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        jdbc:
+          batch_size: 5
+        connection:
+          handling_mode: DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - org.redisson.spring.starter.RedissonAutoConfigurationV2
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+
+logging:
+  level:
+    com.zaxxer.hikari: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.springframework.transaction: DEBUG

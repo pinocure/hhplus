@@ -6,13 +6,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import java.util.ArrayList;
 
@@ -23,6 +24,12 @@ import static org.junit.jupiter.api.Assertions.*;
         "spring.autoconfigure.exclude=org.redisson.spring.starter.RedissonAutoConfigurationV2"
 })
 @Testcontainers
+@ActiveProfiles("test")
+@DirtiesContext
+@EmbeddedKafka(partitions = 1, brokerProperties = {
+        "listeners=PLAINTEXT://localhost:9092",
+        "port=9092"
+})
 public class OrderServiceIntegrationTest {
 
     @Container
@@ -31,23 +38,13 @@ public class OrderServiceIntegrationTest {
             .withUsername("ruang")
             .withPassword("ruang");
 
-    @Container
-    static GenericContainer<?> redis = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
-            .withExposedPorts(6379);
-
-
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", mysql::getJdbcUrl);
         registry.add("spring.datasource.username", mysql::getUsername);
         registry.add("spring.datasource.password", mysql::getPassword);
-
-
-        registry.add("spring.redis.host", redis::getHost);
-        registry.add("spring.redis.port", redis::getFirstMappedPort);
-
-        registry.add("spring.redisson.address", () -> "redis://" + redis.getHost() + ":" + redis.getFirstMappedPort());
-
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create");
+        registry.add("kafka.bootstrap-servers", () -> "localhost:9092");
     }
 
     @Autowired
@@ -56,13 +53,10 @@ public class OrderServiceIntegrationTest {
     @Test
     @DisplayName("주문 생성, 저장")
     void orderRepositoryIntegrationTest() {
-        // given : 주문 생성
         Order order = new Order(1L, new ArrayList<>(), new ArrayList<>());
 
-        // when : 주문 저장
         Order saved = orderRepository.save(order);
 
-        // then : 저장 성공
         assertNotNull(saved.getId());
         assertEquals(1L, saved.getUserId());
         assertEquals("PENDING", saved.getStatus());
@@ -82,4 +76,9 @@ public class OrderServiceIntegrationTest {
         assertTrue(found.isPresent());
         assertEquals(1L, found.get().getUserId());
     }
+
 }
+
+
+
+

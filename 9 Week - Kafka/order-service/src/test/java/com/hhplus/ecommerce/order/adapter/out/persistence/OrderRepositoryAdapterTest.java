@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest()
 @Testcontainers
 @Import(OrderRepositoryAdapter.class)
-@ActiveProfiles("test-no-redis")
+@ActiveProfiles("test-no-kafka")
 public class OrderRepositoryAdapterTest {
 
     @Container
@@ -48,6 +48,7 @@ public class OrderRepositoryAdapterTest {
         Order saved = repository.save(order);
 
         assertNotNull(saved.getId());
+
         Optional<Order> found = repository.findById(saved.getId());
         assertTrue(found.isPresent());
     }
@@ -72,3 +73,8 @@ public class OrderRepositoryAdapterTest {
     }
 
 }
+
+
+
+
+

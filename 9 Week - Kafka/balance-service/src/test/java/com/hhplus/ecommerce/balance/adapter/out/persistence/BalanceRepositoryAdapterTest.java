@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest
 @Testcontainers
 @Import(BalanceRepositoryAdapter.class)
-@ActiveProfiles("test-no-redis")
+@ActiveProfiles("test-no-kafka")
 public class BalanceRepositoryAdapterTest {
 
     @Container

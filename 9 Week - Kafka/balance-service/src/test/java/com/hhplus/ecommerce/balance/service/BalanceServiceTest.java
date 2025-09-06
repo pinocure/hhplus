@@ -3,10 +3,12 @@ package com.hhplus.ecommerce.balance.service;
 import com.hhplus.ecommerce.balance.application.port.out.BalanceRepository;
 import com.hhplus.ecommerce.balance.application.service.BalanceService;
 import com.hhplus.ecommerce.balance.domain.Balance;
+import com.hhplus.ecommerce.common.exception.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -16,6 +18,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 public class BalanceServiceTest {
 
     @Mock
@@ -25,7 +28,6 @@ public class BalanceServiceTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
         balanceService = new BalanceService(balanceRepository);
     }
 
@@ -83,7 +85,7 @@ public class BalanceServiceTest {
         Balance balance = new Balance(1L, new BigDecimal("100"));
         when(balanceRepository.findByUserId(1L)).thenReturn(Optional.of(balance));
 
-        assertThrows(Exception.class, () -> balanceService.deductBalance(1L, new BigDecimal("200")));
+        assertThrows(BusinessException.class, () -> balanceService.deductBalance(1L, new BigDecimal("200")));
     }
 
 }

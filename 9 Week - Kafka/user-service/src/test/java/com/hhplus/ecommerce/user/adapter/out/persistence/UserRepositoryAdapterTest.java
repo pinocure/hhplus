@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest
 @Testcontainers
 @Import(UserRepositoryAdapter.class)
-@ActiveProfiles("test-no-redis")
+@ActiveProfiles("test-no-kafka")
 public class UserRepositoryAdapterTest {
 
     @Container
@@ -34,6 +34,8 @@ public class UserRepositoryAdapterTest {
         registry.add("spring.datasource.username", mysql::getUsername);
         registry.add("spring.datasource.password", mysql::getPassword);
         registry.add("app.redis.enabled", () -> "false");
+
+        registry.add("spring.autoconfigure.exclude", () -> "org.springframework.kafka.annotation.KafkaBootstrapConfiguration,org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration");
     }
 
     @Autowired

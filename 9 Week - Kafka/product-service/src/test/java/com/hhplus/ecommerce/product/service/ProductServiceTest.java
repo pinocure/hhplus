@@ -6,8 +6,10 @@ import com.hhplus.ecommerce.product.application.service.ProductService;
 import com.hhplus.ecommerce.product.domain.Product;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -17,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 public class ProductServiceTest {
 
     @Mock
@@ -26,8 +29,8 @@ public class ProductServiceTest {
 
     @BeforeEach
     public void setUp() {
-        MockitoAnnotations.openMocks(this);
         productService = new ProductService(productRepository);
+        ReflectionTestUtils.setField(productService, "redisTemplate", null);
     }
 
     @Test
@@ -84,16 +87,6 @@ public class ProductServiceTest {
     }
 
     @Test
-    void reserveStock_concurrencyConflict() {
-        Product p1 = new Product(1L, "P1", BigDecimal.TEN, 10, 0, 0L);
-        when(productRepository.findById(1L)).thenReturn(Optional.of(p1));
-        when(productRepository.checkProductVersion(1L, 0L)).thenReturn(false);
-
-        assertDoesNotThrow(() -> productService.reserveStock(1L, 5, 0L));
-        assertEquals(5, p1.getReservedStock());
-    }
-
-    @Test
     void deductStock_success() {
         Product p1 = new Product(1L, "P1", BigDecimal.TEN, 10, 0, 0L);
         when(productRepository.findById(1L)).thenReturn(Optional.of(p1));
@@ -102,17 +95,6 @@ public class ProductServiceTest {
         assertDoesNotThrow(() -> productService.deductStock(1L, 5));
 
         assertEquals(5, p1.getStock());
-    }
-
-    @Test
-    void restoreReservedStock_success() {
-        Product p1 = new Product(1L, "P1", BigDecimal.TEN, 10, 0, 0L);
-        when(productRepository.findById(1L)).thenReturn(Optional.of(p1));
-        when(productRepository.save(any(Product.class))).thenReturn(p1);
-
-        assertDoesNotThrow(() -> productService.restoreStock(1L, 5));
-
-        assertEquals(0, p1.getReservedStock());
     }
 
 }

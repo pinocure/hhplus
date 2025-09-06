@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest
 @Testcontainers
 @Import(CouponRepositoryAdapter.class)
-@ActiveProfiles("test-no-redis")
+@ActiveProfiles("test-no-kafka")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class CouponRepositoryAdapterTest {
 

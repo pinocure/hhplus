@@ -2,6 +2,7 @@ package com.hhplus.ecommerce.order.adapter.in.web;
 
 import com.hhplus.ecommerce.order.application.port.in.OrderUseCase;
 import com.hhplus.ecommerce.order.domain.Order;
+import com.hhplus.ecommerce.order.domain.OrderItem;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,9 +40,12 @@ public class OrderControllerTest {
     @Test
     @DisplayName("주문 성공")
     void createOrder_success() throws Exception {
-        Order order = new Order(1L, List.of(), List.of());
+        OrderItem orderItem = new OrderItem(1L, 2, BigDecimal.valueOf(1000));
+        Order order = new Order(1L, List.of(orderItem), List.of());
         order.setId(1L);
         order.setTotalPrice(BigDecimal.valueOf(2000));
+        order.setStatus("CONFIRMED");
+
         when(orderUseCase.createOrder(1L, List.of(1L), List.of(2), List.of())).thenReturn(order);
 
         mockMvc.perform(post("/orders")
@@ -49,7 +53,9 @@ public class OrderControllerTest {
                         .param("productIds", "1")
                         .param("quantities", "2"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalPrice").value(2000));
+                .andExpect(jsonPath("$.userId").value(1))
+                .andExpect(jsonPath("$.totalPrice").value(2000))
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
     }
 
     @Test
@@ -57,12 +63,13 @@ public class OrderControllerTest {
     void payOrder_success() throws Exception {
         Order order = new Order(1L, List.of(), List.of());
         order.setId(1L);
-        order.setStatus("PAID");
+        order.setStatus("PROCESSING");
+
         when(orderUseCase.payOrder(1L)).thenReturn(order);
 
         mockMvc.perform(post("/orders/1/pay"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("PAID"));
+                .andExpect(jsonPath("$.status").value("PROCESSING"));
     }
 
 }

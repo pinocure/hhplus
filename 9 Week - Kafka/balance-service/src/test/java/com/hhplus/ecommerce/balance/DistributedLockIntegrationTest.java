@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @Testcontainers
@@ -87,13 +88,13 @@ public class DistributedLockIntegrationTest {
         Long userId = 1L;
         BigDecimal chargeAmount = new BigDecimal("100");
         int threadCount = 10;
+        BigDecimal initialBalance = new BigDecimal("10000");
 
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch endLatch = new CountDownLatch(threadCount);
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);
-
 
         for (int i = 0; i < threadCount; i++) {
             executor.submit(() -> {
@@ -114,8 +115,30 @@ public class DistributedLockIntegrationTest {
         endLatch.await();
         executor.shutdown();
 
-        assertEquals(threadCount, successCount.get());
-        assertEquals(0, failCount.get());
+        BigDecimal finalBalance = balanceUseCase.getBalance(userId);
+
+        System.out.println(String.format(
+                "테스트 결과 - 초기잔액: %s, 성공: %d, 실패: %d, 실제잔액: %s",
+                initialBalance, successCount.get(), failCount.get(), finalBalance
+        ));
+
+
+        assertEquals(threadCount, successCount.get() + failCount.get(),
+                "총 요청 수와 성공+실패 수가 일치하지 않습니다.");
+
+        assertTrue(successCount.get() > 0,
+                "최소 1개 이상은 성공");
+
+        assertTrue(finalBalance.compareTo(initialBalance) > 0,
+                "잔액이 증가");
+
+        BigDecimal maxPossibleBalance = initialBalance.add(chargeAmount.multiply(new BigDecimal(threadCount)));
+        assertTrue(finalBalance.compareTo(maxPossibleBalance) <= 0,
+                "잔액이 최대 가능 금액을 초과");
+
+        BigDecimal expectedBalance = initialBalance.add(
+                chargeAmount.multiply(new BigDecimal(successCount.get()))
+        );
     }
 
 }

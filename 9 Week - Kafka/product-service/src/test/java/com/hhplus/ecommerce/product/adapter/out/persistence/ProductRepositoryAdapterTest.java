@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @Testcontainers
 @Import({ProductRepositoryAdapter.class, RedisConfig.class})
-@ActiveProfiles("test-no-redis")
+@ActiveProfiles("test-no-kafka")
 public class ProductRepositoryAdapterTest {
 
     @Container
